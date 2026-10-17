@@ -1,0 +1,11 @@
+{
+  "author": "mnaoumov",
+  "authorUrl": "https://github.com/mnaoumov/",
+  "description": "Select many files and folders in the File explorer with ease: a touch selection mode, keyboard selection, select by rule and batch actions.",
+  "fundingUrl": "https://www.buymeacoffee.com/mnaoumov",
+  "id": "explorer-multi-select",
+  "isDesktopOnly": false,
+  "minAppVersion": "1.14.4",
+  "name": "Explorer Multi-Select",
+  "version": "0.0.0"
+}
