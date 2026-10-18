@@ -1,4 +1,5 @@
 import type {
+  FileExplorerView,
   FileTreeItem,
   FileTreeItemParent,
   FolderTreeItem
@@ -26,6 +27,15 @@ interface FakeExplorerTreeAddFileOptions {
 
 interface FakeExplorerTreeAddFolderOptions extends FakeExplorerTreeAddFileOptions {
   readonly isCollapsed?: boolean;
+}
+
+interface FakeExplorerViewConstructorOptions {
+  readonly hasNavButtons?: boolean;
+}
+
+interface FakeFile {
+  readonly name: string;
+  readonly path: string;
 }
 
 interface FakeKeyEntry {
@@ -72,6 +82,9 @@ export class FakeScope {
  */
 export class FakeExplorerTree {
   public activeDom: ExplorerTreeItem | null = null;
+  public readonly containerEl = createDiv({ cls: 'nav-files-container' });
+  public readonly fileItems: Record<string, ExplorerTreeItem> = {};
+  public readonly files = new WeakMap<HTMLElement, FakeFile>();
   public focusedItem: ExplorerTreeItem | null = null;
   public readonly onKeyArrowDown = vi.fn();
   public readonly onKeyArrowUp = vi.fn();
@@ -87,6 +100,7 @@ export class FakeExplorerTree {
   public addFile(name: string, parent: FileTreeItemParent = this.root, options: FakeExplorerTreeAddFileOptions = {}): FileTreeItem {
     const item = castTo<FileTreeItem>(createItemBase(name, parent, options));
     parent.vChildren.children.push(item);
+    this.register(item);
     return item;
   }
 
@@ -96,7 +110,9 @@ export class FakeExplorerTree {
       collapsed: options.isCollapsed ?? false,
       vChildren: { children: [] }
     });
+    item.selfEl.createDiv({ cls: 'tree-item-icon collapse-icon' });
     parent.vChildren.children.push(item);
+    this.register(item);
     return item;
   }
 
@@ -140,6 +156,42 @@ export class FakeExplorerTree {
       this.selectedDoms.add(item);
     }
   }
+
+  private register(item: ExplorerTreeItem): void {
+    this.containerEl.append(item.el);
+    this.files.set(item.el, castTo<FakeFile>(item.file));
+    this.fileItems[item.file.path] = item;
+  }
+}
+
+/**
+ * A stand-in for the File explorer view: its container with the header buttons and the tree, and the
+ * core actions the selection mode calls, as spies.
+ */
+export class FakeExplorerView {
+  public readonly containerEl = createDiv();
+  public readonly leaf = {};
+  public readonly navButtonsEl: HTMLElement | null;
+  public readonly onDeleteSelectedFiles = vi.fn();
+  public readonly openFileContextMenu = vi.fn();
+
+  public get fileItems(): Record<string, ExplorerTreeItem> {
+    return this.tree.fileItems;
+  }
+
+  public get files(): WeakMap<HTMLElement, FakeFile> {
+    return this.tree.files;
+  }
+
+  public constructor(public readonly tree = new FakeExplorerTree(), options: FakeExplorerViewConstructorOptions = {}) {
+    const headerEl = this.containerEl.createDiv({ cls: 'nav-header' });
+    this.navButtonsEl = options.hasNavButtons ?? true ? headerEl.createDiv({ cls: 'nav-buttons-container' }) : null;
+    this.containerEl.append(tree.containerEl);
+  }
+
+  public asView(): FileExplorerView {
+    return castTo<FileExplorerView>(this);
+  }
 }
 
 /**
@@ -156,6 +208,8 @@ export function createKeyboardEvent(target: Node | null = null): KeyboardEvent {
 
 function createItemBase(name: string, parent: FileTreeItemParent, options: FakeExplorerTreeAddFileOptions): object {
   const el = createDiv();
+  const selfEl = el.createDiv({ cls: 'tree-item-self' });
+  selfEl.createDiv({ cls: 'tree-item-inner', text: name });
   if (options.isFilteredOut) {
     el.addClass('is-filtered-out');
   }
@@ -164,7 +218,8 @@ function createItemBase(name: string, parent: FileTreeItemParent, options: FakeE
     file: { name, path: name },
     info: { hidden: options.isHidden ?? false },
     parent,
-    selectable: options.isSelectable ?? true
+    selectable: options.isSelectable ?? true,
+    selfEl
   };
 }
 

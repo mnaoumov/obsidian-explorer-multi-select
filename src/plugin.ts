@@ -10,6 +10,7 @@ import { Notice } from 'obsidian';
 import { ExplorerSelectionComponent } from './explorer-selection-component.ts';
 import { PluginSettingsComponent } from './plugin-settings-component.ts';
 import { PluginSettingsTab } from './plugin-settings-tab.ts';
+import { ToggleSelectionModeCommandHandler } from './toggle-selection-mode-command-handler.ts';
 
 export class Plugin extends PluginBase {
   protected override async onloadImpl(): Promise<void> {
@@ -31,9 +32,10 @@ export class Plugin extends PluginBase {
       })
     );
 
-    this.addChild(
+    const explorerSelectionComponent = this.addChild(
       new ExplorerSelectionComponent({
         app: this.app,
+        shouldEnterSelectionModeOnLongPress: (): boolean => pluginSettingsComponent.settings.shouldEnterSelectionModeOnLongPress,
         statusBarItemEl: this.addStatusBarItem()
       })
     );
@@ -55,6 +57,7 @@ export class Plugin extends PluginBase {
     // A new window. It is not registered automatically -- a demo vault without this command can only be
     // Reached by downloading the asset by hand. It hides itself on mobile, so no platform guard is needed.
     await this.commandHandlerComponent.registerCommandHandlers(() => [
+      new ToggleSelectionModeCommandHandler({ explorerSelectionComponent }),
       new OpenDemoVaultCommandHandler({
         app: this.app,
         pluginId: this.manifest.id,
