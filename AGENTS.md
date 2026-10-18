@@ -17,7 +17,11 @@ What core 1.14.4 already does, so the plugin never rebuilds it:
 
 ## Current state
 
-**Scaffolded, nothing built yet.** The repo was generated on 2026-10-17 with `create-obsidian-plugin` (preset `all-in-one`, CSS, desktop and mobile, the unofficial API subset, no editor extensions). Its answers are in `.create-obsidian-plugin.json`, so re-running the generator in this folder updates every file not edited by hand. Everything under `src/` is still the generator's sample code, and the demo vault is still its sample vault. The coverage thresholds stay at 0 until real code replaces the samples.
+The repo was generated on 2026-10-17 with `create-obsidian-plugin` (preset `all-in-one`, CSS, desktop and mobile, the unofficial API subset, no editor extensions). Its answers are in `.create-obsidian-plugin.json`, so re-running the generator in this folder updates every file not edited by hand.
+
+**Built: the selection core (design points 2 and 6).** `src/explorer-selection-component.ts` attaches to every File explorer tree. It adds Ctrl/Cmd+A, Space and a Shift+Up/Down range that shrinks when the direction reverses (`src/explorer-tree-keyboard.ts`), and it shows the selection's size in the status bar. `src/keyboard-selection.desktop.integration.test.ts` drives all of it with trusted key presses.
+
+**Still the generator's samples:** the `Sample` and `Sample editor` commands in `src/plugin.ts`, the `textSetting` setting and its tab, and the whole demo vault. The coverage thresholds stay at 0 until those are replaced. Every other file under `src/` is at 100%.
 
 **No GitHub remote exists yet.** `mnaoumov/obsidian-explorer-multi-select` has not been created, so nothing is pushed and nothing is released. The plugin id `explorer-multi-select` was free in the community directory on 2026-10-17. An id can never change once it is published, so check it again right before the first submission.
 
@@ -39,7 +43,10 @@ This is the starting point the owner approved. Refine it as the build goes.
 
 - The explorer's selection lives on `FileExplorerView.tree`, a `Tree`. It holds `selectedDoms`, `clearSelectedDoms`, `selectItem`, `deselectItem`, `handleItemSelection` and `onKeyArrowDown`, all declared in `obsidian-typings`.
 - **One `Tree` class serves seven views:** the explorer, bookmarks, tags, outline, all properties, sync and the web viewer history. Patch only the explorer's tree instance, never the prototype unguarded.
-- Several runtime members are missing from the typings: `onKeyEscape`, `getSelectedItems`, `removeSelection`, `TreeItem.selectable`, `onFileContextMenu`, and copy and cut. Add them to `obsidian-typings` rather than declaring them here, and verify each against a live build before relying on it.
+- **Keys:** the explorer's tree registers its keys on `view.scope`, which is the same object as `tree.scope`. `Scope.handleKey` runs only the FIRST entry in `scope.keys` that matches, and core binds its listeners when it builds the tree. So patching `onKeyOpen` or `onKeyArrowDown` changes nothing, and a key registered with a plain `register` never runs for Space or Shift+Up/Down. The plugin moves its own entries to the front of `scope.keys`. When a key is not for it, such as a press in a text field, it calls the same core method that core bound.
+- **Selection changes** go through `selectItem`, `deselectItem` and `clearSelectedDoms`, with one exception: `FileExplorerView.onDelete` deletes from `selectedDoms` directly. The status-bar count therefore also listens to the vault's `delete` event.
+- **Integration tests:** `pressKey` only queues the key in Electron, so wait for its `keyup` before reading the state. It takes Electron key names: `Space`, `Up`, `Down` and `A`, not `' '` or `ArrowDown`.
+- `obsidian-typings` now declares `Tree.getSelectedItems`, `removeSelection`, `onKeyEscape`, `isKeyboardNavigationEvent`, `TreeItem.selectable`, `FileExplorerView.onFileContextMenu` and `itemsBeingCut`, and `handleItemSelection` now returns `boolean`. These are on its `1.14.4` release branches, but `@obsidian-typings/obsidian-public-1.14.4@1.12.0` does not have them yet. The selection core needs none of them. A later feature that does must bump `obsidian-typings` first, and never declare them here.
 
 ## Conventions
 
