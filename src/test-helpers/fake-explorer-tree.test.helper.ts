@@ -11,6 +11,7 @@ import type {
   Scope
 } from 'obsidian';
 
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { vi } from 'vitest';
 
@@ -94,6 +95,8 @@ export class FakeExplorerTree {
   public readonly fileItems: Record<string, ExplorerTreeItem> = {};
   public readonly files = new WeakMap<HTMLElement, FakeFile>();
   public focusedItem: ExplorerTreeItem | null = null;
+  public readonly handleDeleteSelectedItems = vi.fn<(keyboardEvent: KeyboardEvent) => Promise<void>>(noopAsync);
+
   public readonly onKeyArrowDown = vi.fn();
   public readonly onKeyArrowUp = vi.fn();
   public readonly onKeyOpen = vi.fn();

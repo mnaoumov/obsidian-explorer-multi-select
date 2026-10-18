@@ -5,6 +5,7 @@ import type {
   WorkspaceLeaf
 } from 'obsidian';
 
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import {
   App,
@@ -18,6 +19,8 @@ import {
   it,
   vi
 } from 'vitest';
+
+import type { ExplorerBatchDelete } from './explorer-batch-delete.ts';
 
 import {
   ExplorerSelectionModeComponent,
@@ -40,6 +43,7 @@ interface InternalPluginsLike {
 describe('ExplorerSelectionModeComponent', () => {
   let app: App;
   let bookmarks: BookmarksLike | null;
+  let deleteSelectionSpy: () => Promise<void>;
   let isMobile: boolean;
   let shouldEnterOnLongPress: boolean;
   let view: FakeExplorerView;
@@ -47,6 +51,7 @@ describe('ExplorerSelectionModeComponent', () => {
   beforeEach(() => {
     app = App.createConfigured__();
     bookmarks = null;
+    deleteSelectionSpy = vi.fn(noopAsync);
     castTo<InternalPluginsHolder>(app.asOriginalType__()).internalPlugins = {
       getEnabledPluginById: (id): BookmarksLike | null => id === 'bookmarks' ? bookmarks : null
     };
@@ -92,6 +97,10 @@ describe('ExplorerSelectionModeComponent', () => {
   function loadMode(): ExplorerSelectionModeComponent {
     const mode = new ExplorerSelectionModeComponent({
       app: app.asOriginalType__(),
+      batchDelete: castTo<ExplorerBatchDelete>({
+        deleteSelection: deleteSelectionSpy,
+        isBatch: (): boolean => view.tree.selectedDoms.size > 1
+      }),
       shouldEnterOnLongPress: (): boolean => shouldEnterOnLongPress,
       view: view.asView()
     });
@@ -347,7 +356,22 @@ describe('ExplorerSelectionModeComponent', () => {
     const moreEvent = click(actionButton('more'));
 
     expect(view.onDeleteSelectedFiles).toHaveBeenCalledWith(deleteEvent);
+    expect(deleteSelectionSpy).not.toHaveBeenCalled();
     expect(view.openFileContextMenu).toHaveBeenCalledWith(moreEvent, file.selfEl);
+  });
+
+  it('deletes a selection of several rows with the batch delete', () => {
+    const mode = loadMode();
+    const a = view.tree.addFile('a.md');
+    const b = view.tree.addFile('b.md');
+    mode.enter();
+    view.tree.selectItem(a);
+    view.tree.selectItem(b);
+
+    click(actionButton('delete'));
+
+    expect(deleteSelectionSpy).toHaveBeenCalledOnce();
+    expect(view.onDeleteSelectedFiles).not.toHaveBeenCalled();
   });
 
   it('turns off and clears the selection on Done', () => {
