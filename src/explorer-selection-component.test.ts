@@ -1,9 +1,15 @@
 import type { WorkspaceLeaf } from 'obsidian';
 
-import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import {
+  noop,
+  noopAsync
+} from '@mnaoumov/typescript-lib/function';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
-import { App } from 'obsidian-test-mocks/obsidian';
+import {
+  App,
+  Platform
+} from 'obsidian-test-mocks/obsidian';
 import {
   afterEach,
   beforeEach,
@@ -16,6 +22,7 @@ import {
 import type { ExplorerTreeItem } from './explorer-tree-items.ts';
 
 import { ExplorerSelectionComponent } from './explorer-selection-component.ts';
+import { PluginSettings } from './plugin-settings.ts';
 import {
   createKeyboardEvent,
   FakeExplorerView
@@ -32,6 +39,7 @@ interface InternalPluginsLike {
 describe('ExplorerSelectionComponent', () => {
   let app: App;
   let leaves: WorkspaceLeaf[];
+  let settings: PluginSettings;
   let statusBarItemEl: HTMLElement;
   let triggerWorkspaceLayoutReady: (() => void) | undefined;
 
@@ -39,6 +47,7 @@ describe('ExplorerSelectionComponent', () => {
     vi.useFakeTimers();
     app = App.createConfigured__();
     leaves = [];
+    settings = new PluginSettings();
     triggerWorkspaceLayoutReady = undefined;
     app.asOriginalType__().workspace.getLeavesOfType = vi.fn(() => leaves);
     app.asOriginalType__().workspace.onLayoutReady = vi.fn((callback: () => void) => {
@@ -68,7 +77,7 @@ describe('ExplorerSelectionComponent', () => {
   }
 
   function loadComponent(): ExplorerSelectionComponent {
-    const component = new ExplorerSelectionComponent({ app: app.asOriginalType__(), shouldEnterSelectionModeOnLongPress: (): boolean => true, statusBarItemEl });
+    const component = new ExplorerSelectionComponent({ app: app.asOriginalType__(), getSettings: (): PluginSettings => settings, statusBarItemEl });
     component.load();
     triggerWorkspaceLayoutReady?.();
     vi.runAllTimers();
@@ -139,6 +148,49 @@ describe('ExplorerSelectionComponent', () => {
 
     tree.scope.dispatch(['Mod'], 'A', createKeyboardEvent());
     expect(statusBarText()).toBe('2 files');
+  });
+
+  it('routes core\'s click handling through the click settings', () => {
+    const tree = addExplorer();
+    const a = tree.addFile('a.md');
+    const b = tree.addFile('b.md');
+    vi.spyOn(app.asOriginalType__().workspace, 'setActiveLeaf').mockImplementation(noop);
+    loadComponent();
+
+    expect(tree.handleItemSelection(new MouseEvent('click', { ctrlKey: true }), a)).toBe(false);
+    expect(statusBarText()).toBe('');
+
+    settings.shouldToggleSelectionOnCtrlOrCommandClick = true;
+    expect(tree.handleItemSelection(new MouseEvent('click', { ctrlKey: true }), a)).toBe(true);
+    expect(statusBarText()).toBe('1 file');
+
+    settings.shouldKeepSelectionOnClick = true;
+    expect(tree.handleItemSelection(new MouseEvent('click'), b)).toBe(false);
+    expect(statusBarText()).toBe('1 file');
+    expect(tree.focusedItem).toBe(b);
+
+    // Outside a click, a clear still clears.
+    tree.clearSelectedDoms();
+    expect(statusBarText()).toBe('');
+  });
+
+  it('reads the long-press setting when a long-press comes', () => {
+    const view = addExplorerView();
+    const file = view.tree.addFile('file.md');
+    loadComponent();
+    const isMobile = Platform.isMobile;
+    Platform.isMobile = true;
+    try {
+      settings.shouldEnterSelectionModeOnLongPress = false;
+      file.selfEl.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+      expect(view.containerEl.hasClass('explorer-multi-select-selection-mode')).toBe(false);
+
+      settings.shouldEnterSelectionModeOnLongPress = true;
+      file.selfEl.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+      expect(view.containerEl.hasClass('explorer-multi-select-selection-mode')).toBe(true);
+    } finally {
+      Platform.isMobile = isMobile;
+    }
   });
 
   it('removes its keys and patches on unload', () => {

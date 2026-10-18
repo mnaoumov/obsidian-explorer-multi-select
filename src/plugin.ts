@@ -7,6 +7,8 @@ import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 import { PluginEventSourceImpl } from '@mnaoumov/obsidian-lib/plugin/plugin-event-source';
 import { Notice } from 'obsidian';
 
+import type { PluginSettings } from './plugin-settings.ts';
+
 import { ExplorerSelectionComponent } from './explorer-selection-component.ts';
 import { PluginSettingsComponent } from './plugin-settings-component.ts';
 import { PluginSettingsTab } from './plugin-settings-tab.ts';
@@ -35,7 +37,7 @@ export class Plugin extends PluginBase {
     const explorerSelectionComponent = this.addChild(
       new ExplorerSelectionComponent({
         app: this.app,
-        shouldEnterSelectionModeOnLongPress: (): boolean => pluginSettingsComponent.settings.shouldEnterSelectionModeOnLongPress,
+        getSettings: (): PluginSettings => pluginSettingsComponent.settings,
         statusBarItemEl: this.addStatusBarItem()
       })
     );
