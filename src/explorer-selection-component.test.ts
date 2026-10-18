@@ -18,8 +18,16 @@ import type { ExplorerTreeItem } from './explorer-tree-items.ts';
 import { ExplorerSelectionComponent } from './explorer-selection-component.ts';
 import {
   createKeyboardEvent,
-  FakeExplorerTree
+  FakeExplorerView
 } from './test-helpers/fake-explorer-tree.test.helper.ts';
+
+interface InternalPluginsHolder {
+  internalPlugins: InternalPluginsLike;
+}
+
+interface InternalPluginsLike {
+  getEnabledPluginById: (id: string) => null;
+}
 
 describe('ExplorerSelectionComponent', () => {
   let app: App;
@@ -36,6 +44,8 @@ describe('ExplorerSelectionComponent', () => {
     app.asOriginalType__().workspace.onLayoutReady = vi.fn((callback: () => void) => {
       triggerWorkspaceLayoutReady = callback;
     });
+    app.asOriginalType__().workspace.revealLeaf = vi.fn(noopAsync);
+    castTo<InternalPluginsHolder>(app.asOriginalType__()).internalPlugins = { getEnabledPluginById: (): null => null };
     statusBarItemEl = createDiv();
   });
 
@@ -43,14 +53,22 @@ describe('ExplorerSelectionComponent', () => {
     vi.useRealTimers();
   });
 
-  function addExplorer(): FakeExplorerTree {
-    const tree = new FakeExplorerTree();
-    leaves.push(strictProxy<WorkspaceLeaf>({ view: castTo<WorkspaceLeaf['view']>({ tree: tree.asTree() }) }));
-    return tree;
+  function addExplorer(): FakeExplorerView['tree'] {
+    return addExplorerView().tree;
+  }
+
+  function addExplorerView(): FakeExplorerView {
+    const view = new FakeExplorerView();
+    const leaf = strictProxy<WorkspaceLeaf>({
+      loadIfDeferred: noopAsync,
+      view: castTo<WorkspaceLeaf['view']>(view.asView())
+    });
+    leaves.push(leaf);
+    return view;
   }
 
   function loadComponent(): ExplorerSelectionComponent {
-    const component = new ExplorerSelectionComponent({ app: app.asOriginalType__(), statusBarItemEl });
+    const component = new ExplorerSelectionComponent({ app: app.asOriginalType__(), shouldEnterSelectionModeOnLongPress: (): boolean => true, statusBarItemEl });
     component.load();
     triggerWorkspaceLayoutReady?.();
     vi.runAllTimers();
@@ -171,4 +189,50 @@ describe('ExplorerSelectionComponent', () => {
 
     expect(statusBarText()).toBe('1 file');
   });
+
+  it('adds a selection mode to each explorer and counts the selection in its bar', async () => {
+    const view = addExplorerView();
+    const file = view.tree.addFile('file.md');
+    const component = loadComponent();
+    expect(component.hasExplorer()).toBe(true);
+
+    await component.toggleSelectionMode();
+    expect(view.containerEl.hasClass('explorer-multi-select-selection-mode')).toBe(true);
+
+    view.tree.selectItem(file);
+    expect(barCountText(view)).toBe('1 file');
+
+    view.tree.selectedDoms.delete(file);
+    app.asOriginalType__().vault.trigger('delete', file.file);
+    await noopAsync();
+    expect(barCountText(view)).toBe('Nothing selected');
+
+    await component.toggleSelectionMode();
+    expect(view.containerEl.hasClass('explorer-multi-select-selection-mode')).toBe(false);
+  });
+
+  it('toggles nothing without an explorer, or while the explorer is still deferred', async () => {
+    const component = loadComponent();
+    expect(component.hasExplorer()).toBe(false);
+    await component.toggleSelectionMode();
+
+    leaves.push(strictProxy<WorkspaceLeaf>({ loadIfDeferred: noopAsync, view: castTo<WorkspaceLeaf['view']>({}) }));
+    await component.toggleSelectionMode();
+    expect(app.asOriginalType__().workspace.revealLeaf).toHaveBeenCalledOnce();
+  });
+
+  it('removes the selection mode of an explorer that was closed', () => {
+    const view = addExplorerView();
+    loadComponent();
+    expect(view.containerEl.querySelector('.explorer-multi-select-toggle-button')).not.toBeNull();
+
+    leaves.length = 0;
+    app.asOriginalType__().workspace.trigger('layout-change');
+
+    expect(view.containerEl.querySelector('.explorer-multi-select-toggle-button')).toBeNull();
+  });
 });
+
+function barCountText(view: FakeExplorerView): null | string {
+  return view.containerEl.querySelector('.explorer-multi-select-action-bar-count')?.textContent ?? null;
+}

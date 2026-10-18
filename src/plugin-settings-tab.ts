@@ -13,11 +13,12 @@ export class PluginSettingsTab extends PluginSettingsTabBase<PluginSettings> {
   protected override getSettingDefinitionItems(): SettingDefinitionItem[] {
     return [
       this.settingEx({
-        desc: 'Text setting description.',
-        name: 'Text setting name',
+        desc: 'On mobile, a long-press on a row in the File explorer turns selection mode on and selects that row. '
+          + 'A second long-press then opens the context menu. Turn this off to keep the long-press for the context menu.',
+        name: 'Long-press enters selection mode',
         render: (setting) => {
-          setting.addText((text) => {
-            this.bind({ propertyName: 'textSetting', valueComponent: text });
+          setting.addToggle((toggle) => {
+            this.bind({ propertyName: 'shouldEnterSelectionModeOnLongPress', valueComponent: toggle });
           });
         }
       })
