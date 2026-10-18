@@ -7,6 +7,7 @@ import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 import { PluginEventSourceImpl } from '@mnaoumov/obsidian-lib/plugin/plugin-event-source';
 import { Notice } from 'obsidian';
 
+import { ExplorerSelectionComponent } from './explorer-selection-component.ts';
 import { PluginSettingsComponent } from './plugin-settings-component.ts';
 import { PluginSettingsTab } from './plugin-settings-tab.ts';
 
@@ -27,6 +28,13 @@ export class Plugin extends PluginBase {
           plugin: this,
           pluginSettingsComponent
         })
+      })
+    );
+
+    this.addChild(
+      new ExplorerSelectionComponent({
+        app: this.app,
+        statusBarItemEl: this.addStatusBarItem()
       })
     );
 
