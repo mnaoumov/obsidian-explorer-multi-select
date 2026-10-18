@@ -74,6 +74,10 @@ window.DEBUG.enable('explorer-multi-select');
 
 For more details, refer to the [documentation](https://mnaoumov.dev/obsidian-lib/guides/debugging/).
 
+## Changelog
+
+All notable changes to this project will be documented in the [CHANGELOG](./CHANGELOG.md).
+
 ## Contributing
 
 Contributions are welcome — see [CONTRIBUTING](./CONTRIBUTING.md) to get set up.
