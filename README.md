@@ -6,6 +6,29 @@ Selecting several files and folders in [Obsidian](https://obsidian.md/)'s File e
 
 `Explorer Multi-Select` fixes that inside the File explorer you already use, rather than replacing it with a view of its own. It adds a selection mode with checkboxes and an action bar for touch, the missing keyboard keys, commands that select by extension, glob pattern, property value or the explorer's filter, a count in the status bar, and one confirmation for a batch delete. Moving, bookmarking and link updating stay core's own, so they behave exactly as they always have.
 
+<!-- markdownlint-disable MD033 -->
+
+<a href="https://github.com/mnaoumov/obsidian-explorer-multi-select/blob/HEAD/images/screenshots/screenshot-desktop-1.png"><img src="images/screenshots/screenshot-desktop-1.png" alt="Selection mode: tick rows, then act on them all" width="600"></a>
+
+<details>
+<summary>More screenshots</summary>
+
+<div>
+<a href="https://github.com/mnaoumov/obsidian-explorer-multi-select/blob/HEAD/images/screenshots/screenshot-desktop-2.png"><img src="images/screenshots/screenshot-desktop-2.png" alt="The status bar counts the files and folders you selected" width="600"></a>
+<a href="https://github.com/mnaoumov/obsidian-explorer-multi-select/blob/HEAD/images/screenshots/screenshot-desktop-3.png"><img src="images/screenshots/screenshot-desktop-3.png" alt="Select by rule, in the folder the prompt names" width="600"></a>
+<a href="https://github.com/mnaoumov/obsidian-explorer-multi-select/blob/HEAD/images/screenshots/screenshot-desktop-4.png"><img src="images/screenshots/screenshot-desktop-4.png" alt="One confirmation deletes the whole selection" width="600"></a>
+<a href="https://github.com/mnaoumov/obsidian-explorer-multi-select/blob/HEAD/images/screenshots/screenshot-desktop-5.png"><img src="images/screenshots/screenshot-desktop-5.png" alt="Every option is a toggle in the settings tab" width="600"></a>
+<a href="https://github.com/mnaoumov/obsidian-explorer-multi-select/blob/HEAD/images/screenshots/screenshot-mobile-1.png"><img src="images/screenshots/screenshot-mobile-1.png" alt="Selection mode: tap rows to tick them" width="270"></a>
+<a href="https://github.com/mnaoumov/obsidian-explorer-multi-select/blob/HEAD/images/screenshots/screenshot-mobile-2.png"><img src="images/screenshots/screenshot-mobile-2.png" alt="More opens core's own menu for them all" width="270"></a>
+<a href="https://github.com/mnaoumov/obsidian-explorer-multi-select/blob/HEAD/images/screenshots/screenshot-mobile-3.png"><img src="images/screenshots/screenshot-mobile-3.png" alt="Select by rule, in the folder the prompt names" width="270"></a>
+<a href="https://github.com/mnaoumov/obsidian-explorer-multi-select/blob/HEAD/images/screenshots/screenshot-mobile-4.png"><img src="images/screenshots/screenshot-mobile-4.png" alt="One confirmation deletes the whole selection" width="270"></a>
+<a href="https://github.com/mnaoumov/obsidian-explorer-multi-select/blob/HEAD/images/screenshots/screenshot-mobile-5.png"><img src="images/screenshots/screenshot-mobile-5.png" alt="Every option is a toggle in the settings tab" width="270"></a>
+</div>
+
+</details>
+
+<!-- markdownlint-enable MD033 -->
+
 ## Demo vault
 
 **The documentation is an interactive demo vault.** Every feature has a note that explains what it does and why you would want it, with buttons that select rows, run the commands and flip the settings, so you can watch it happen.
