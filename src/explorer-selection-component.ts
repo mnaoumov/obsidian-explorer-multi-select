@@ -2,12 +2,15 @@ import type { FileExplorerView } from '@obsidian-typings/obsidian-public-latest'
 import type {
   App,
   KeymapEventListener,
+  Menu,
   Modifier,
-  Scope
+  Scope,
+  TAbstractFile
 } from 'obsidian';
 
 import { CallbackLayoutReadyComponent } from '@mnaoumov/obsidian-lib/components/layout-ready-component';
 import { MonkeyAroundComponent } from '@mnaoumov/obsidian-lib/components/monkey-around-component';
+import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { ViewType } from '@obsidian-typings/obsidian-public-latest/implementations';
 import { Platform } from 'obsidian';
@@ -18,6 +21,7 @@ import type {
 } from './explorer-tree-items.ts';
 import type { PluginSettings } from './plugin-settings.ts';
 
+import { ExplorerBatchDelete } from './explorer-batch-delete.ts';
 import { ExplorerSelectionModeComponent } from './explorer-selection-mode-component.ts';
 import { ExplorerTreeClick } from './explorer-tree-click.ts';
 import {
@@ -26,7 +30,17 @@ import {
   isFileExplorerView
 } from './explorer-tree-items.ts';
 import { ExplorerTreeKeyboard } from './explorer-tree-keyboard.ts';
+import {
+  FILE_EXPLORER_MENU_SOURCE,
+  findMenuItemByIcon
+} from './menu-items.ts';
 import { invertSelection } from './select-by-rule.ts';
+
+/**
+ * The icon of core's Delete item, which is how it is told apart from the items that `files-menu` listeners
+ * add: its title is translated.
+ */
+const DELETE_MENU_ITEM_ICON_CLASS = 'lucide-trash-2';
 
 interface ExplorerSelectionComponentConstructorParams {
   readonly app: App;
@@ -35,8 +49,8 @@ interface ExplorerSelectionComponentConstructorParams {
 }
 
 /**
- * Owns the File explorer's selection: it adds the keyboard selection and the touch selection mode to every
- * explorer, and shows the selection's size in the status bar.
+ * Owns the File explorer's selection: it adds the keyboard selection, the touch selection mode and the batch
+ * delete to every explorer, and shows the selection's size in the status bar.
  *
  * It patches each explorer's tree INSTANCE. The `Tree` prototype also serves Bookmarks, Tags, Outline and
  * four other views, which must keep core's behavior.
@@ -44,6 +58,7 @@ interface ExplorerSelectionComponentConstructorParams {
 export class ExplorerSelectionComponent extends MonkeyAroundComponent {
   private readonly app: App;
   private readonly attachedTrees = new WeakSet<ExplorerTree>();
+  private readonly batchDeletes = new Map<ExplorerTree, ExplorerBatchDelete>();
   private readonly getSettings: () => PluginSettings;
   private lastChangedTree: ExplorerTree | undefined;
   private readonly selectionModes = new Map<ExplorerTree, ExplorerSelectionModeComponent>();
@@ -142,12 +157,15 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
         continue;
       }
       this.attachedTrees.add(view.tree);
-      this.attachToTree(view.tree);
+      const batchDelete = new ExplorerBatchDelete({ app: this.app, view });
+      this.batchDeletes.set(view.tree, batchDelete);
+      this.attachToTree(view.tree, batchDelete);
       this.selectionModes.set(
         view.tree,
         this.addChild(
           new ExplorerSelectionModeComponent({
             app: this.app,
+            batchDelete,
             shouldEnterOnLongPress: (): boolean => this.getSettings().shouldEnterSelectionModeOnLongPress,
             view
           })
@@ -163,6 +181,7 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
       // Its explorer was closed.
       this.removeChild(selectionMode);
       this.selectionModes.delete(tree);
+      this.batchDeletes.delete(tree);
     }
 
     if (!this.lastChangedTree || trees.has(this.lastChangedTree)) {
@@ -172,7 +191,7 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
     this.updateStatusBar();
   }
 
-  private attachToTree(tree: ExplorerTree): void {
+  private attachToTree(tree: ExplorerTree, batchDelete: ExplorerBatchDelete): void {
     const click = new ExplorerTreeClick({ app: this.app, getSettings: this.getSettings, tree });
     this.registerMethodPatch({
       $object: tree,
@@ -198,6 +217,19 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
       });
     }
 
+    // Core's Delete key reads this from the tree on every press, so the instance patch reaches it.
+    this.registerMethodPatch({
+      $object: tree,
+      methodName: 'handleDeleteSelectedItems',
+      patchHandler: ({ fallback, originalArguments: [keyboardEvent] }) => {
+        if (!batchDelete.isBatch()) {
+          return fallback();
+        }
+        keyboardEvent.preventDefault();
+        return batchDelete.deleteSelection();
+      }
+    });
+
     const keyboard = new ExplorerTreeKeyboard(tree);
     this.registerLeadingKey(tree.scope, ['Mod'], 'A', (keyboardEvent) => keyboard.selectAll(keyboardEvent));
     this.registerLeadingKey(tree.scope, [], ' ', (keyboardEvent) => keyboard.toggleFocusedItem(keyboardEvent));
@@ -216,9 +248,38 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
     return views;
   }
 
+  /**
+   * Re-points core's Delete item in the explorer's menu for a multi-item selection, which asks once per item,
+   * to the batch delete. Core adds that item before it fires `files-menu`, so it is in the menu already.
+   *
+   * @param menu - The menu.
+   * @param files - The files the menu is for.
+   * @param source - Where the menu was opened.
+   */
+  private onFilesMenu(menu: Menu, files: TAbstractFile[], source: string): void {
+    if (source !== FILE_EXPLORER_MENU_SOURCE) {
+      return;
+    }
+    const coreDeleteItem = findMenuItemByIcon(menu, DELETE_MENU_ITEM_ICON_CLASS);
+    if (!coreDeleteItem) {
+      return;
+    }
+    // Core opens this menu for the whole selection of the explorer it was opened in.
+    const fileSet = new Set(files);
+    for (const [tree, batchDelete] of this.batchDeletes) {
+      if (batchDelete.isBatch() && tree.selectedDoms.size === fileSet.size && [...tree.selectedDoms].every((item) => fileSet.has(item.file))) {
+        coreDeleteItem.onClick(() => {
+          invokeAsyncSafely(() => batchDelete.deleteSelection());
+        });
+        return;
+      }
+    }
+  }
+
   private onLayoutReady(): void {
     this.attachToExplorers();
     this.registerEvent(this.app.workspace.on('layout-change', this.attachToExplorers.bind(this)));
+    this.registerEvent(this.app.workspace.on('files-menu', this.onFilesMenu.bind(this)));
     this.registerEvent(this.app.vault.on('delete', () => {
       // The explorer drops a deleted row from the selection in its own `delete` handler, which may run
       // after this one. A microtask runs once every handler of this event has.

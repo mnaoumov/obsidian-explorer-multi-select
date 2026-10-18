@@ -60,6 +60,17 @@
   cursor: default;
 }
 
+/* The batch delete confirmation: a long selection scrolls inside the list instead of growing the modal. */
+.explorer-multi-select-batch-delete-list {
+  max-height: 12em;
+  overflow-y: auto;
+}
+
+.explorer-multi-select-batch-delete-checkbox {
+  display: block;
+  margin-block: var(--size-4-2);
+}
+
 /* The word-count widget the sample editor extension renders. Styled here rather than through
    `element.style`, so a theme can restyle it. */
 .cm-sample-word-count {

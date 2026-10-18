@@ -2,11 +2,10 @@ import type { FileExplorerView } from '@obsidian-typings/obsidian-public-latest'
 import type {
   App,
   IconName,
-  MenuItem,
-  MenuSeparator,
   TAbstractFile
 } from 'obsidian';
 
+import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
 import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import {
   Component,
@@ -16,6 +15,7 @@ import {
   setTooltip
 } from 'obsidian';
 
+import type { ExplorerBatchDelete } from './explorer-batch-delete.ts';
 import type { ExplorerTreeItem } from './explorer-tree-items.ts';
 
 import {
@@ -23,13 +23,12 @@ import {
   formatSelectionCount,
   getVisibleItems
 } from './explorer-tree-items.ts';
+import {
+  FILE_EXPLORER_MENU_SOURCE,
+  findMenuItem,
+  findMenuItemByIcon
+} from './menu-items.ts';
 import { invertSelection } from './select-by-rule.ts';
-
-/**
- * The `source` core passes with the File explorer's own menus, so a `files-menu` listener adds the items
- * it adds there.
- */
-const FILE_EXPLORER_MENU_SOURCE = 'file-explorer-context-menu';
 
 /**
  * The icon of core's "Move N items to..." item, which is how it is told apart from the other items that
@@ -52,6 +51,7 @@ interface ExplorerSelectionModeComponentAddActionButtonOptions {
 
 interface ExplorerSelectionModeComponentConstructorParams {
   readonly app: App;
+  readonly batchDelete: ExplorerBatchDelete;
   readonly shouldEnterOnLongPress: () => boolean;
   readonly view: FileExplorerView;
 }
@@ -60,8 +60,9 @@ interface ExplorerSelectionModeComponentConstructorParams {
  * The touch selection mode of one File explorer. While it is on, every row shows a checkbox, a tap toggles
  * the row instead of opening it, and an action bar under the tree counts the selection and acts on it.
  *
- * The actions are core's own: the bar runs the same Move, Bookmark and Delete the context menu runs, and
- * More opens that menu, so every plugin that adds to it through `files-menu` is there too.
+ * The actions are core's own, except Delete: the bar runs the same Move and Bookmark the context menu runs,
+ * Delete asks once for the whole selection, and More opens the context menu, so every plugin that adds to it
+ * through `files-menu` is there too.
  */
 export class ExplorerSelectionModeComponent extends Component {
   /**
@@ -77,6 +78,7 @@ export class ExplorerSelectionModeComponent extends Component {
   private actionBarEl: HTMLElement | null = null;
   private readonly actionButtons: ActionButton[] = [];
   private readonly app: App;
+  private readonly batchDelete: ExplorerBatchDelete;
   private countEl: HTMLElement | null = null;
   private isSwallowingContextMenu = false;
   private readonly shouldEnterOnLongPress: () => boolean;
@@ -87,6 +89,7 @@ export class ExplorerSelectionModeComponent extends Component {
   public constructor(params: ExplorerSelectionModeComponentConstructorParams) {
     super();
     this.app = params.app;
+    this.batchDelete = params.batchDelete;
     this.shouldEnterOnLongPress = params.shouldEnterOnLongPress;
     this.view = params.view;
   }
@@ -223,7 +226,11 @@ export class ExplorerSelectionModeComponent extends Component {
   }
 
   private deleteSelection(mouseEvent: MouseEvent): void {
-    this.view.onDeleteSelectedFiles(mouseEvent);
+    if (this.batchDelete.isBatch()) {
+      invokeAsyncSafely(() => this.batchDelete.deleteSelection());
+    } else {
+      this.view.onDeleteSelectedFiles(mouseEvent);
+    }
   }
 
   private getItemFromEvent(mouseEvent: MouseEvent): ExplorerTreeItem | null {
@@ -260,7 +267,7 @@ export class ExplorerSelectionModeComponent extends Component {
   private moveSelection(mouseEvent: MouseEvent): void {
     const menu = new Menu();
     this.app.workspace.trigger('files-menu', menu, this.getSelectedFiles(), FILE_EXPLORER_MENU_SOURCE, this.view.leaf);
-    const moveItem = findMenuItem(menu, (item) => item.iconEl.querySelector(`.${MOVE_MENU_ITEM_ICON_CLASS}`) !== null);
+    const moveItem = findMenuItemByIcon(menu, MOVE_MENU_ITEM_ICON_CLASS);
     if (moveItem?.callback) {
       moveItem.callback();
     } else {
@@ -355,12 +362,4 @@ export class ExplorerSelectionModeComponent extends Component {
 export function getEventTargetElement(uiEvent: UIEvent): Element | null {
   const targetNode = uiEvent.targetNode;
   return targetNode?.instanceOf(Element) ? targetNode : null;
-}
-
-function findMenuItem(menu: Menu, isMatch: (item: MenuItem) => boolean): MenuItem | undefined {
-  return menu.items.find((item): item is MenuItem => isMenuItem(item) && isMatch(item));
-}
-
-function isMenuItem(item: MenuItem | MenuSeparator): item is MenuItem {
-  return 'iconEl' in item;
 }

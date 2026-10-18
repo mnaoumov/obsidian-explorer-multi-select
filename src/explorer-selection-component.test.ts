@@ -1,4 +1,8 @@
-import type { WorkspaceLeaf } from 'obsidian';
+import type {
+  Menu,
+  MenuItem,
+  WorkspaceLeaf
+} from 'obsidian';
 
 import {
   noop,
@@ -21,6 +25,7 @@ import {
 
 import type { ExplorerTreeItem } from './explorer-tree-items.ts';
 
+import { ExplorerBatchDelete } from './explorer-batch-delete.ts';
 import { ExplorerSelectionComponent } from './explorer-selection-component.ts';
 import { PluginSettings } from './plugin-settings.ts';
 import {
@@ -35,6 +40,12 @@ interface InternalPluginsHolder {
 interface InternalPluginsLike {
   getEnabledPluginById: (id: string) => null;
 }
+
+interface MenuItemOnClickSpy {
+  onClick: ReturnType<typeof vi.fn>;
+}
+
+type SpiedMenuItem = MenuItem & MenuItemOnClickSpy;
 
 describe('ExplorerSelectionComponent', () => {
   let app: App;
@@ -351,6 +362,83 @@ describe('ExplorerSelectionComponent', () => {
     app.asOriginalType__().workspace.trigger('layout-change');
 
     expect(view.containerEl.querySelector('.explorer-multi-select-toggle-button')).toBeNull();
+  });
+
+  describe('batch delete', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    function createMenuItem(iconClass: string): SpiedMenuItem {
+      const iconEl = createDiv();
+      iconEl.createSvg('svg', { cls: iconClass });
+      return castTo<SpiedMenuItem>({ iconEl, onClick: vi.fn() });
+    }
+
+    function triggerFilesMenu(items: MenuItem[], files: unknown[], source = 'file-explorer-context-menu'): void {
+      app.asOriginalType__().workspace.trigger('files-menu', castTo<Menu>({ items }), files, source, null);
+    }
+
+    it('routes the Delete key to the batch delete for several rows, and to core for one', async () => {
+      const deleteSelectionSpy = vi.spyOn(ExplorerBatchDelete.prototype, 'deleteSelection').mockResolvedValue();
+      const tree = addExplorer();
+      const coreHandleDelete = tree.handleDeleteSelectedItems;
+      const a = tree.addFile('a.md');
+      const b = tree.addFile('b.md');
+      loadComponent();
+
+      tree.selectItem(a);
+      const singleEvent = createKeyboardEvent();
+      await tree.handleDeleteSelectedItems(singleEvent);
+      expect(coreHandleDelete).toHaveBeenCalledWith(singleEvent);
+      expect(deleteSelectionSpy).not.toHaveBeenCalled();
+
+      tree.selectItem(b);
+      const batchEvent = createKeyboardEvent();
+      const preventDefaultSpy = vi.spyOn(batchEvent, 'preventDefault');
+      await tree.handleDeleteSelectedItems(batchEvent);
+      expect(coreHandleDelete).toHaveBeenCalledOnce();
+      expect(deleteSelectionSpy).toHaveBeenCalledOnce();
+      expect(preventDefaultSpy).toHaveBeenCalledOnce();
+    });
+
+    it('re-points core\'s Delete item in the menu for the selection', () => {
+      const deleteSelectionSpy = vi.spyOn(ExplorerBatchDelete.prototype, 'deleteSelection').mockResolvedValue();
+      const tree = addExplorer();
+      const a = tree.addFile('a.md');
+      const b = tree.addFile('b.md');
+      loadComponent();
+      tree.selectItem(a);
+      tree.selectItem(b);
+
+      const otherItem = createMenuItem('lucide-folder-tree');
+      const deleteItem = createMenuItem('lucide-trash-2');
+      triggerFilesMenu([otherItem, deleteItem], [a.file, b.file]);
+
+      expect(otherItem.onClick).not.toHaveBeenCalled();
+      const callback = castTo<() => void>(deleteItem.onClick.mock.calls[0]?.[0]);
+      callback();
+      expect(deleteSelectionSpy).toHaveBeenCalledOnce();
+    });
+
+    it('leaves menus alone that are not the explorer\'s, have no Delete item, or are not for its selection', () => {
+      const tree = addExplorer();
+      const a = tree.addFile('a.md');
+      const b = tree.addFile('b.md');
+      const c = tree.addFile('c.md');
+      loadComponent();
+
+      const deleteItem = createMenuItem('lucide-trash-2');
+      tree.selectItem(a);
+      triggerFilesMenu([deleteItem], [a.file]);
+      tree.selectItem(b);
+      triggerFilesMenu([deleteItem], [a.file, b.file], 'bases-context-menu');
+      triggerFilesMenu([createMenuItem('lucide-folder-tree')], [a.file, b.file]);
+      triggerFilesMenu([deleteItem], [a.file, c.file]);
+      triggerFilesMenu([deleteItem], [a.file, b.file, c.file]);
+
+      expect(deleteItem.onClick).not.toHaveBeenCalled();
+    });
   });
 });
 
