@@ -1,24 +1,35 @@
 # Explorer Multi-Select
 
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/mnaoumov) [![GitHub release](https://img.shields.io/github/v/release/mnaoumov/obsidian-explorer-multi-select)](https://github.com/mnaoumov/obsidian-explorer-multi-select/releases) [![GitHub downloads](https://img.shields.io/github/downloads/mnaoumov/obsidian-explorer-multi-select/total)](https://github.com/mnaoumov/obsidian-explorer-multi-select/releases)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/mnaoumov) [![GitHub release](https://img.shields.io/github/v/release/mnaoumov/obsidian-explorer-multi-select)](https://github.com/mnaoumov/obsidian-explorer-multi-select/releases) [![GitHub downloads](https://img.shields.io/github/downloads/mnaoumov/obsidian-explorer-multi-select/total)](https://github.com/mnaoumov/obsidian-explorer-multi-select/releases) [![Coverage: 100%](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/mnaoumov/obsidian-explorer-multi-select)
 
-Select many files and folders in the File explorer with ease: a touch selection mode, keyboard selection, select by rule and batch actions.
+Selecting several files and folders in [Obsidian](https://obsidian.md/)'s File explorer is hard. On desktop you get Alt-click and Shift-click, a Shift+Up/Down range that only ever grows, no Select all, and one dialog per item when you delete. On a phone or a tablet you get no multi-select at all.
+
+`Explorer Multi-Select` fixes that inside the File explorer you already use, rather than replacing it with a view of its own. It adds a selection mode with checkboxes and an action bar for touch, the missing keyboard keys, commands that select by extension, glob pattern, property value or the explorer's filter, a count in the status bar, and one confirmation for a batch delete. Moving, bookmarking and link updating stay core's own, so they behave exactly as they always have.
 
 ## Demo vault
 
-**The documentation is a demo vault.** Every feature has a note that explains what it does and why you would want it, with a button you can press to watch it happen.
+**The documentation is an interactive demo vault.** Every feature has a note that explains what it does and why you would want it, with buttons that select rows, run the commands and flip the settings, so you can watch it happen.
 
 **[Start reading here](<./demo-vault/00 Start.md>)** — it is plain markdown, so it works on GitHub with nothing installed.
 
 A copy of the vault ships with every release. You can access it via any of the following:
 
-1. Running the **Explorer Multi-Select: Open demo vault** command.
+1. Running the **`Explorer Multi-Select`: Open demo vault** command.
 2. Downloading `explorer-multi-select-demo-vault.zip` from the [Releases](https://github.com/mnaoumov/obsidian-explorer-multi-select/releases). It unzips into a single `explorer-multi-select-demo-vault-<version>` folder.
 3. Browsing its source in [`demo-vault/`](./demo-vault/README.md) in this repository.
 
+## What it does
+
+- **Selection mode** puts a checkbox on every row and an action bar under the tree, with Move, Bookmark, Delete, More actions, Select all, Invert selection and Done. A tap toggles a row instead of opening it. On mobile, a long-press turns it on. [01 Selection mode](<./demo-vault/01 Selection mode.md>)
+- **Keyboard selection**: `Ctrl+A` / `Cmd+A` selects the focused folder's rows, `Space` toggles the focused row, and a `Shift+Up` / `Shift+Down` range shrinks when you reverse direction. [02 Keyboard](<./demo-vault/02 Keyboard.md>)
+- **A selection count** in the status bar, such as `12 files, 3 folders`. [03 Selection count](<./demo-vault/03 Selection count.md>)
+- **Select by rule**: commands that select by extension, by glob pattern, by property value, or every file the explorer's filter shows, in the focused folder or everything under it, and a command that inverts the selection. [04 Select by rule](<./demo-vault/04 Select by rule.md>)
+- **One confirmation for a batch delete**, from the Delete key, the action bar or core's context menu. Each item still goes through Obsidian's own delete, so the **Deleted files** setting holds. [05 Batch delete](<./demo-vault/05 Batch delete.md>)
+- **Two opt-in click settings**: Ctrl/Cmd-click toggles a row, and a plain click keeps the selection while it opens a file. [06 Click settings](<./demo-vault/06 Click settings.md>)
+
 ## Installation
 
-The plugin is not available in [the official Community Plugins repository](https://community.obsidian.md) yet.
+The plugin is not yet listed in [the official Community Plugins repository](https://community.obsidian.md/plugins). Until it is, install it as a beta release.
 
 ### Beta versions
 
@@ -48,10 +59,14 @@ Contributions are welcome — see [CONTRIBUTING](./CONTRIBUTING.md) to get set u
 
 <!-- markdownlint-disable MD033 -->
 
-<a href="https://www.buymeacoffee.com/mnaoumov" target="_blank">Support this plugin</a>
+<a href="https://www.buymeacoffee.com/mnaoumov" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="60" width="217"></a>
 
 <!-- markdownlint-enable MD033 -->
 
+## My other Obsidian resources
+
+[See my other Obsidian resources](https://github.com/mnaoumov/obsidian-resources).
+
 ## License
 
-© [mnaoumov](https://github.com/mnaoumov/)
+© [Michael Naumov](https://github.com/mnaoumov/)
