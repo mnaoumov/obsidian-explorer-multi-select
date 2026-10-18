@@ -23,6 +23,7 @@ import {
   formatSelectionCount,
   getVisibleItems
 } from './explorer-tree-items.ts';
+import { invertSelection } from './select-by-rule.ts';
 
 /**
  * The `source` core passes with the File explorer's own menus, so a `files-menu` listener adds the items
@@ -195,7 +196,15 @@ export class ExplorerSelectionModeComponent extends Component {
     this.addActionButton(buttonsEl, { action: 'delete', icon: 'trash-2', label: 'Delete', onClick: this.deleteSelection.bind(this) });
     this.addActionButton(buttonsEl, { action: 'more', icon: 'more-horizontal', label: 'More actions', onClick: this.openContextMenu.bind(this) });
     this.addActionButton(buttonsEl, { action: 'select-all', icon: 'check-check', isAvailable: () => true, label: 'Select all', onClick: this.selectAll.bind(this) });
-    this.addActionButton(buttonsEl, { action: 'invert', icon: 'flip-vertical-2', isAvailable: () => true, label: 'Invert selection', onClick: this.invertSelection.bind(this) });
+    this.addActionButton(buttonsEl, {
+      action: 'invert',
+      icon: 'flip-vertical-2',
+      isAvailable: () => true,
+      label: 'Invert selection',
+      onClick: (): void => {
+        invertSelection(this.view.tree);
+      }
+    });
 
     const doneButtonEl = buttonsEl.createEl('button', { cls: 'mod-cta explorer-multi-select-action-bar-done', text: 'Done' });
     doneButtonEl.addEventListener('click', this.exit.bind(this));
@@ -233,17 +242,6 @@ export class ExplorerSelectionModeComponent extends Component {
 
   private getSelectedItems(): ExplorerTreeItem[] {
     return [...this.view.tree.selectedDoms];
-  }
-
-  private invertSelection(): void {
-    const tree = this.view.tree;
-    for (const item of getVisibleItems(tree.root)) {
-      if (tree.selectedDoms.has(item)) {
-        tree.deselectItem(item);
-      } else {
-        tree.selectItem(item);
-      }
-    }
   }
 
   private leave(): void {

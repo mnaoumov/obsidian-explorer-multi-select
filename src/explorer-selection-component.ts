@@ -10,8 +10,12 @@ import { CallbackLayoutReadyComponent } from '@mnaoumov/obsidian-lib/components/
 import { MonkeyAroundComponent } from '@mnaoumov/obsidian-lib/components/monkey-around-component';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { ViewType } from '@obsidian-typings/obsidian-public-latest/implementations';
+import { Platform } from 'obsidian';
 
-import type { ExplorerTree } from './explorer-tree-items.ts';
+import type {
+  ExplorerTree,
+  ExplorerTreeItem
+} from './explorer-tree-items.ts';
 import type { PluginSettings } from './plugin-settings.ts';
 
 import { ExplorerSelectionModeComponent } from './explorer-selection-mode-component.ts';
@@ -22,6 +26,7 @@ import {
   isFileExplorerView
 } from './explorer-tree-items.ts';
 import { ExplorerTreeKeyboard } from './explorer-tree-keyboard.ts';
+import { invertSelection } from './select-by-rule.ts';
 
 interface ExplorerSelectionComponentConstructorParams {
   readonly app: App;
@@ -52,12 +57,31 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
   }
 
   /**
+   * Returns the first File explorer when it is built, without showing it.
+   *
+   * @returns The explorer, or `null` when there is none or it is still deferred.
+   */
+  public getExplorerView(): FileExplorerView | null {
+    return this.getExplorerViews()[0] ?? null;
+  }
+
+  /**
    * Tells whether there is a File explorer whose selection mode can be toggled.
    *
    * @returns Whether a File explorer leaf exists.
    */
   public hasExplorer(): boolean {
     return this.app.workspace.getLeavesOfType(ViewType.FileExplorer).length > 0;
+  }
+
+  /**
+   * Inverts the selection among an explorer's visible rows.
+   *
+   * @param view - The explorer.
+   */
+  public invertSelection(view: FileExplorerView): void {
+    invertSelection(view.tree);
+    this.showSelection(view);
   }
 
   public override onload(): void {
@@ -67,18 +91,46 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
   }
 
   /**
-   * Shows the first File explorer and toggles its selection mode.
+   * Shows the first File explorer, building it when it is deferred.
+   *
+   * @returns The explorer, or `null` when there is none.
    */
-  public async toggleSelectionMode(): Promise<void> {
+  public async revealExplorer(): Promise<FileExplorerView | null> {
     const leaf = this.app.workspace.getLeavesOfType(ViewType.FileExplorer)[0];
     if (!leaf) {
-      return;
+      return null;
     }
     await leaf.loadIfDeferred();
     await this.app.workspace.revealLeaf(leaf);
     this.attachToExplorers();
-    if (isFileExplorerView(leaf.view)) {
-      this.selectionModes.get(leaf.view.tree)?.toggle();
+    return isFileExplorerView(leaf.view) ? leaf.view : null;
+  }
+
+  /**
+   * Adds rows to an explorer's selection.
+   *
+   * @param view - The explorer.
+   * @param items - The rows.
+   * @returns The rows that were not selected before and are now.
+   */
+  public selectItems(view: FileExplorerView, items: readonly ExplorerTreeItem[]): ExplorerTreeItem[] {
+    const tree = view.tree;
+    const newItems = items.filter((item) => !tree.selectedDoms.has(item));
+    for (const item of newItems) {
+      tree.selectItem(item);
+    }
+    this.showSelection(view);
+    // `selectItem` skips a row that is not selectable.
+    return newItems.filter((item) => tree.selectedDoms.has(item));
+  }
+
+  /**
+   * Shows the first File explorer and toggles its selection mode.
+   */
+  public async toggleSelectionMode(): Promise<void> {
+    const view = await this.revealExplorer();
+    if (view) {
+      this.selectionModes.get(view.tree)?.toggle();
     }
   }
 
@@ -202,6 +254,18 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
     this.register(() => {
       scope.unregister(handler);
     });
+  }
+
+  /**
+   * On mobile, turns the selection mode on after a command changed the selection, because a phone shows a
+   * selection only through the mode's checkboxes and bar.
+   *
+   * @param view - The explorer.
+   */
+  private showSelection(view: FileExplorerView): void {
+    if (Platform.isMobile && view.tree.selectedDoms.size > 0) {
+      this.selectionModes.get(view.tree)?.enter();
+    }
   }
 
   private updateStatusBar(): void {

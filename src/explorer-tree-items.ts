@@ -118,7 +118,14 @@ export function isFolderItem(item: ExplorerTreeItem): item is FolderTreeItem {
   return 'vChildren' in item;
 }
 
-function isVisible(item: ExplorerTreeItem): boolean {
+/**
+ * Tells whether the explorer shows a row when its folder is expanded: neither hidden nor filtered out by the
+ * explorer's filter.
+ *
+ * @param item - The row.
+ * @returns Whether the row is shown.
+ */
+export function isVisible(item: ExplorerTreeItem): boolean {
   return !item.info.hidden && !item.el.hasClass('is-filtered-out');
 }
 
