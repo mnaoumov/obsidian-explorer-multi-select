@@ -273,6 +273,75 @@ describe('ExplorerSelectionComponent', () => {
     expect(app.asOriginalType__().workspace.revealLeaf).toHaveBeenCalledOnce();
   });
 
+  it('returns the first built explorer, without revealing it', () => {
+    const component = loadComponent();
+    expect(component.getExplorerView()).toBeNull();
+
+    const view = addExplorerView();
+    expect(component.getExplorerView()).toBe(view);
+    expect(app.asOriginalType__().workspace.revealLeaf).not.toHaveBeenCalled();
+  });
+
+  it('reveals no explorer when there is none, or it stays deferred', async () => {
+    const component = loadComponent();
+    expect(await component.revealExplorer()).toBeNull();
+
+    leaves.push(strictProxy<WorkspaceLeaf>({ loadIfDeferred: noopAsync, view: castTo<WorkspaceLeaf['view']>({}) }));
+    expect(await component.revealExplorer()).toBeNull();
+  });
+
+  it('reveals the explorer and returns it', async () => {
+    const view = addExplorerView();
+    const component = loadComponent();
+
+    expect(await component.revealExplorer()).toBe(view);
+    expect(app.asOriginalType__().workspace.revealLeaf).toHaveBeenCalledOnce();
+  });
+
+  it('adds rows to the selection and returns the ones it added', () => {
+    const view = addExplorerView();
+    const a = view.tree.addFile('a.md');
+    const b = view.tree.addFile('b.md');
+    const locked = view.tree.addFile('locked.md', view.tree.root, { isSelectable: false });
+    const component = loadComponent();
+    view.tree.selectItem(a);
+
+    expect(component.selectItems(view.asView(), [a, b, locked])).toEqual([b]);
+    expect([...view.tree.selectedDoms]).toEqual([a, b]);
+    expect(statusBarText()).toBe('2 files');
+    expect(view.containerEl.hasClass('explorer-multi-select-selection-mode')).toBe(false);
+  });
+
+  it('inverts the selection among the visible rows', () => {
+    const view = addExplorerView();
+    const a = view.tree.addFile('a.md');
+    const b = view.tree.addFile('b.md');
+    const component = loadComponent();
+    view.tree.selectItem(a);
+
+    component.invertSelection(view.asView());
+
+    expect([...view.tree.selectedDoms]).toEqual([b]);
+  });
+
+  it('turns the selection mode on after a command selects something on mobile', () => {
+    const isMobile = Platform.isMobile;
+    Platform.isMobile = true;
+    try {
+      const view = addExplorerView();
+      const a = view.tree.addFile('a.md');
+      const component = loadComponent();
+
+      component.selectItems(view.asView(), []);
+      expect(view.containerEl.hasClass('explorer-multi-select-selection-mode')).toBe(false);
+
+      component.selectItems(view.asView(), [a]);
+      expect(view.containerEl.hasClass('explorer-multi-select-selection-mode')).toBe(true);
+    } finally {
+      Platform.isMobile = isMobile;
+    }
+  });
+
   it('removes the selection mode of an explorer that was closed', () => {
     const view = addExplorerView();
     loadComponent();

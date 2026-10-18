@@ -45,6 +45,10 @@ interface FakeKeyEntry {
   readonly scope: Scope;
 }
 
+interface FakeSearchQuery {
+  readonly matcher: null | object;
+}
+
 interface FakeTreeView {
   readonly leaf: object;
 }
@@ -202,6 +206,7 @@ export class FakeExplorerView {
   public readonly navButtonsEl: HTMLElement | null;
   public readonly onDeleteSelectedFiles = vi.fn();
   public readonly openFileContextMenu = vi.fn();
+  public searchQuery: FakeSearchQuery | null = null;
 
   public get fileItems(): Record<string, ExplorerTreeItem> {
     return this.tree.fileItems;
@@ -242,9 +247,13 @@ function createItemBase(name: string, parent: FileTreeItemParent, options: FakeE
   if (options.isFilteredOut) {
     el.addClass('is-filtered-out');
   }
+  // A real `TAbstractFile`'s path is the full one, and its `parent` is the vault root `/` at the top level.
+  const parentPath = 'file' in parent ? parent.file.path : '/';
+  // A name that already holds a `/` is taken as the full path.
+  const path = parentPath === '/' || name.includes('/') ? name : `${parentPath}/${name}`;
   return {
     el,
-    file: { name, path: name },
+    file: { name, parent: { path: parentPath }, path },
     info: { hidden: options.isHidden ?? false },
     parent,
     selectable: options.isSelectable ?? true,
