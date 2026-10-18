@@ -1,11 +1,8 @@
-import type { Editor } from 'obsidian';
-
 import { OpenDemoVaultCommandHandler } from '@mnaoumov/obsidian-lib/command-handlers/open-demo-vault-command-handler';
 import { PluginSettingsTabComponent } from '@mnaoumov/obsidian-lib/components/plugin-settings-tab-component';
 import { PluginDataHandler } from '@mnaoumov/obsidian-lib/data-handler';
 import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 import { PluginEventSourceImpl } from '@mnaoumov/obsidian-lib/plugin/plugin-event-source';
-import { Notice } from 'obsidian';
 
 import type { PluginSettings } from './plugin-settings.ts';
 import type { SelectByRuleCommandHandlerParams } from './select-by-rule-command-handler.ts';
@@ -48,18 +45,6 @@ export class Plugin extends PluginBase {
       })
     );
 
-    this.addCommand({
-      callback: this.runSampleCommand.bind(this),
-      id: 'sample',
-      name: 'Sample'
-    });
-
-    this.addCommand({
-      editorCallback: this.runSampleEditorCommand.bind(this),
-      id: 'sample-editor',
-      name: 'Sample editor'
-    });
-
     const selectByRuleParams: SelectByRuleCommandHandlerParams = {
       app: this.app,
       explorerSelectionComponent,
@@ -84,13 +69,5 @@ export class Plugin extends PluginBase {
         pluginVersion: this.manifest.version
       })
     ]);
-  }
-
-  private runSampleCommand(): void {
-    new Notice('Sample command');
-  }
-
-  private runSampleEditorCommand(editor: Editor): void {
-    editor.replaceSelection('Sample Editor Command');
   }
 }
