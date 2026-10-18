@@ -23,7 +23,7 @@ The repo was generated on 2026-10-17 with `create-obsidian-plugin` (preset `all-
 
 **Still the generator's samples:** the `Sample` and `Sample editor` commands in `src/plugin.ts`, the `textSetting` setting and its tab, and the whole demo vault. The coverage thresholds stay at 0 until those are replaced. Every other file under `src/` is at 100%.
 
-**No GitHub remote exists yet.** `mnaoumov/obsidian-explorer-multi-select` has not been created, so nothing is pushed and nothing is released. The plugin id `explorer-multi-select` was free in the community directory on 2026-10-17. An id can never change once it is published, so check it again right before the first submission.
+**Not released yet.** `main` is pushed to `mnaoumov/obsidian-explorer-multi-select`, but no version has been released. The plugin id `explorer-multi-select` was free in the community directory on 2026-10-17. An id can never change once it is published, so check it again right before the first submission.
 
 ## Design
 
