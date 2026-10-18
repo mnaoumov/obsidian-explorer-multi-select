@@ -45,6 +45,10 @@ interface FakeKeyEntry {
   readonly scope: Scope;
 }
 
+interface FakeTreeView {
+  readonly leaf: object;
+}
+
 interface SelectableItem {
   readonly selectable: boolean;
 }
@@ -92,6 +96,7 @@ export class FakeExplorerTree {
   public readonly root: FileTreeItemParent;
   public readonly scope = new FakeScope();
   public readonly selectedDoms = new Set<ExplorerTreeItem>();
+  public view: FakeTreeView = { leaf: {} };
 
   public constructor() {
     this.root = castTo<FileTreeItemParent>({ vChildren: { children: [] } });
@@ -147,6 +152,25 @@ export class FakeExplorerTree {
     this.selectedDoms.delete(item);
   }
 
+  /**
+   * Core's `handleItemSelection`, cut down: Alt-click toggles and Shift-click selects, and both return
+   * `true`; any other click clears the selection and the focus and returns `false`, so the row opens.
+   *
+   * @param mouseEvent - The click.
+   * @param item - The clicked row.
+   * @returns Whether the click only changed the selection.
+   */
+  public handleItemSelection(mouseEvent: MouseEvent, item: ExplorerTreeItem): boolean {
+    if (mouseEvent.altKey || mouseEvent.shiftKey) {
+      this.selectItem(item);
+      return true;
+    }
+    this.clearSelectedDoms();
+    this.focusedItem = null;
+    this.activeDom = item;
+    return false;
+  }
+
   public isItem(node: ExplorerTreeItem | undefined): boolean {
     return !!node && castTo<unknown>(node) !== this.root;
   }
@@ -155,6 +179,10 @@ export class FakeExplorerTree {
     if (castTo<SelectableItem>(item).selectable) {
       this.selectedDoms.add(item);
     }
+  }
+
+  public setFocusedItem(item: ExplorerTreeItem | null): void {
+    this.focusedItem = item;
   }
 
   private register(item: ExplorerTreeItem): void {
@@ -187,6 +215,7 @@ export class FakeExplorerView {
     const headerEl = this.containerEl.createDiv({ cls: 'nav-header' });
     this.navButtonsEl = options.hasNavButtons ?? true ? headerEl.createDiv({ cls: 'nav-buttons-container' }) : null;
     this.containerEl.append(tree.containerEl);
+    tree.view = this;
   }
 
   public asView(): FileExplorerView {

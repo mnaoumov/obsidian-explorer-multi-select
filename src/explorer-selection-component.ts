@@ -8,11 +8,14 @@ import type {
 
 import { CallbackLayoutReadyComponent } from '@mnaoumov/obsidian-lib/components/layout-ready-component';
 import { MonkeyAroundComponent } from '@mnaoumov/obsidian-lib/components/monkey-around-component';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { ViewType } from '@obsidian-typings/obsidian-public-latest/implementations';
 
 import type { ExplorerTree } from './explorer-tree-items.ts';
+import type { PluginSettings } from './plugin-settings.ts';
 
 import { ExplorerSelectionModeComponent } from './explorer-selection-mode-component.ts';
+import { ExplorerTreeClick } from './explorer-tree-click.ts';
 import {
   countItems,
   formatSelectionCount,
@@ -22,7 +25,7 @@ import { ExplorerTreeKeyboard } from './explorer-tree-keyboard.ts';
 
 interface ExplorerSelectionComponentConstructorParams {
   readonly app: App;
-  readonly shouldEnterSelectionModeOnLongPress: () => boolean;
+  readonly getSettings: () => PluginSettings;
   readonly statusBarItemEl: HTMLElement;
 }
 
@@ -36,15 +39,15 @@ interface ExplorerSelectionComponentConstructorParams {
 export class ExplorerSelectionComponent extends MonkeyAroundComponent {
   private readonly app: App;
   private readonly attachedTrees = new WeakSet<ExplorerTree>();
+  private readonly getSettings: () => PluginSettings;
   private lastChangedTree: ExplorerTree | undefined;
   private readonly selectionModes = new Map<ExplorerTree, ExplorerSelectionModeComponent>();
-  private readonly shouldEnterSelectionModeOnLongPress: () => boolean;
   private readonly statusBarItemEl: HTMLElement;
 
   public constructor(params: ExplorerSelectionComponentConstructorParams) {
     super();
     this.app = params.app;
-    this.shouldEnterSelectionModeOnLongPress = params.shouldEnterSelectionModeOnLongPress;
+    this.getSettings = params.getSettings;
     this.statusBarItemEl = params.statusBarItemEl;
   }
 
@@ -90,7 +93,13 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
       this.attachToTree(view.tree);
       this.selectionModes.set(
         view.tree,
-        this.addChild(new ExplorerSelectionModeComponent({ app: this.app, shouldEnterOnLongPress: this.shouldEnterSelectionModeOnLongPress, view }))
+        this.addChild(
+          new ExplorerSelectionModeComponent({
+            app: this.app,
+            shouldEnterOnLongPress: (): boolean => this.getSettings().shouldEnterSelectionModeOnLongPress,
+            view
+          })
+        )
       );
     }
 
@@ -112,6 +121,15 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
   }
 
   private attachToTree(tree: ExplorerTree): void {
+    const click = new ExplorerTreeClick({ app: this.app, getSettings: this.getSettings, tree });
+    this.registerMethodPatch({
+      $object: tree,
+      methodName: 'handleItemSelection',
+      patchHandler: ({ fallback, originalArguments: [mouseEvent, item] }) =>
+        // TODO(T3643): Drop `castTo` once `obsidian-typings` releases `handleItemSelection` returning `boolean`.
+        click.handleItemSelection(mouseEvent, item, castTo<() => boolean>(fallback))
+    });
+
     // Every core change to the selection goes through these three methods, except the explorer's own
     // `onDelete`, which the vault `delete` event covers.
     for (const methodName of ['clearSelectedDoms', 'deselectItem', 'selectItem'] as const) {
@@ -119,6 +137,9 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
         $object: tree,
         methodName,
         patchHandler: ({ fallback }) => {
+          if (methodName === 'clearSelectedDoms' && click.isKeepingSelection) {
+            return;
+          }
           fallback();
           this.onSelectionChanged(tree);
         }
