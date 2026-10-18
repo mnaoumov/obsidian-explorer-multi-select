@@ -31,6 +31,13 @@ The repo was generated on 2026-10-17 with `create-obsidian-plugin` (preset `all-
 
 **Built: the demo vault and the README.** `demo-vault/` has one note per feature, `01 Selection mode` to `06 Click settings`, and `07 Settings` lists each setting by its `data.json` key. Their buttons call the helpers in `demo-vault/_assets/CodeScriptToolkit/demoSetup.ts`, which drive the first File explorer through `view.fileItems`, `tree.selectItem` and the plugin's command ids, and the fixtures live in `Materials/01 Selection mode/` and `Materials/04 Select by rule/`. `Materials/05 Batch delete/` is created by a button and gitignored. Several buttons leave a prompt or the delete confirmation open for the reader, so the button suite runs with `shouldDismissModals: true`. The generator's sample commands are gone, and the unit-test coverage gate is at 100%.
 
+**Built: the screenshots.** `npm run capture:screenshots` rewrites `images/screenshots/`: five desktop and five mobile frames, the directory's cap per form factor, which the README's screenshot block shows. Its two projects (`capture-screenshots:desktop`, and `capture-screenshots:android` on the 900x1600 `obsidian_screenshots` AVD) open the demo vault through `scripts/demo-vault-global-setup.ts`, so the notes behind the explorer render their buttons. Both suites stage their frames with the closures in `src/test-helpers/screenshot-stages.test.helper.ts`, through `pollInObsidian`. A re-run reproduces every frame byte for byte. Things the frames need:
+
+- `labelScreenshot` draws its caption over the bottom of the frame, where the status-bar count and the action bar sit, so `reserveCaptionBand` lays the app out above the band. The status bar is fixed to the viewport, so it is lifted on its own.
+- The first desktop frame shows the status bar's count of links to the open note, which climbs while the metadata cache resolves, so both suites wait until every note's links are resolved.
+- The prompts' Cancel button is `cancel-button` and the batch delete's is `mod-cancel`. Obsidian 1.14's modal close icon is `modal-header-button`, not `modal-close-button`.
+- On a phone, `app.setting.close()` while settings are closed hides the drawer and leaves it marked open, and `setFocusedItem(item, true)` opens the drawer. After core's menu, the drawer can be marked shut while the note is still pushed aside, so a frame that wants it shut opens it first and then shuts it.
+
 **Not released yet.** `main` is pushed to `mnaoumov/obsidian-explorer-multi-select`, but no version has been released. The plugin id `explorer-multi-select` was free in the community directory on 2026-10-17. An id can never change once it is published, so check it again right before the first submission.
 
 ## Design
