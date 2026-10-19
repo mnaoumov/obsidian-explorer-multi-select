@@ -38,7 +38,7 @@ The repo was generated on 2026-10-17 with `create-obsidian-plugin` (preset `all-
 - The prompts' Cancel button is `cancel-button` and the batch delete's is `mod-cancel`. Obsidian 1.14's modal close icon is `modal-header-button`, not `modal-close-button`.
 - On a phone, `app.setting.close()` while settings are closed hides the drawer and leaves it marked open, and `setFocusedItem(item, true)` opens the drawer. After core's menu, the drawer can be marked shut while the note is still pushed aside, so a frame that wants it shut opens it first and then shuts it.
 
-**Released, not yet listed.** `1.0.0` was released on 2026-10-18, so the id `explorer-multi-select` now ships in a release and is final. It was still free in `community-plugins.json` and in the community directory that day. The directory submission is next, and once the entry is live the README's `## Installation` opener switches to the listed form. `npm run test:integration`, which the release preflight runs, covers the no-app, demo-vault, Android and desktop suites, in that order.
+**Released and listed.** `1.0.0` was released on 2026-10-18 and submitted to the community directory the same day, so the id `explorer-multi-select` is final. The entry is live at `https://community.obsidian.md/plugins/explorer-multi-select`, and the README's `## Installation` opener links it. `npm run test:integration`, which the release preflight runs, covers the no-app, demo-vault, Android and desktop suites, in that order.
 
 ## Design
 
