@@ -52,7 +52,7 @@ A copy of the vault ships with every release. You can access it via any of the f
 
 ## Installation
 
-The plugin is not yet listed in [the official Community Plugins repository](https://community.obsidian.md/plugins). Until it is, install it as a beta release.
+The plugin is available in [the official Community Plugins repository](https://community.obsidian.md/plugins/explorer-multi-select).
 
 ### Beta versions
 
