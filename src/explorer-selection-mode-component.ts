@@ -121,8 +121,8 @@ export class ExplorerSelectionModeComponent extends Component {
 
   public override onload(): void {
     this.createToggleButton();
+    this.registerWindowClick();
     // Capture phase: the rows' own listeners run after these, and must not run for a tap the mode takes.
-    this.registerDomEvent(this.view.containerEl, 'click', this.onClick.bind(this), { capture: true });
     this.registerDomEvent(this.view.containerEl, 'contextmenu', this.onContextMenu.bind(this), { capture: true });
     this.registerDomEvent(this.view.containerEl, 'touchend', this.onGestureEnd.bind(this), { capture: true });
     this.registerDomEvent(this.view.containerEl, 'mouseup', this.onGestureEnd.bind(this), { capture: true });
@@ -342,6 +342,27 @@ export class ExplorerSelectionModeComponent extends Component {
     const firstItem = ensureNonNullable(this.getSelectedItems()[0]);
     // Core builds its menu for the whole selection when the row it opens on is part of it.
     this.view.openFileContextMenu(mouseEvent, firstItem.selfEl);
+  }
+
+  /**
+   * Listens for taps in the capture phase of the explorer's window, which runs before every listener on its
+   * document. Other plugins take row clicks there: `Folder notes` opens a folder's note from a capture listener
+   * on the document and stops the click, so a listener on the view would never see a tap on that folder.
+   */
+  private registerWindowClick(): void {
+    const listener = this.onClick.bind(this);
+    const options = { capture: true };
+    let win = this.view.containerEl.win;
+    win.addEventListener('click', listener, options);
+    const offWindowMigrated = this.view.containerEl.onWindowMigrated((newWin) => {
+      win.removeEventListener('click', listener, options);
+      win = newWin;
+      win.addEventListener('click', listener, options);
+    });
+    this.register(() => {
+      offWindowMigrated();
+      win.removeEventListener('click', listener, options);
+    });
   }
 
   private selectAll(): void {

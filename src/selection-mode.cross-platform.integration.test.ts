@@ -20,6 +20,11 @@ interface ActionResult {
   readonly isDone: boolean;
 }
 
+interface FolderNotesResult {
+  readonly documentClickCount: number;
+  readonly paths: string[];
+}
+
 interface ModeSnapshot {
   readonly countText: null | string;
   readonly hasCheckbox: boolean;
@@ -247,6 +252,74 @@ describe('selection mode in the File explorer', () => {
     expect(turnOffResult.hasActionBarAfterDone).toBe(false);
     expect(turnOffResult.afterCommandOn).toEqual({ countText: 'Nothing selected', hasCheckbox: true, isActive: true, paths: [] });
     expect(turnOffResult.afterCommandOff).toEqual(OFF);
+  });
+
+  it('toggles a folder whose clicks another plugin takes on the document, as Folder notes does', async () => {
+    const result = await evalInObsidian({
+      async callback({ app, lib: { clickElement, waitUntil } }): Promise<FolderNotesResult> {
+        const WAIT_TIMEOUT_IN_MILLISECONDS = 2000;
+        const FOLDER = 'ems-folder-notes';
+
+        await app.vault.createFolder(FOLDER);
+        await app.vault.createFolder(`${FOLDER}/sub`);
+        const leaf = getExplorerLeaf();
+        await leaf.loadIfDeferred();
+        await app.workspace.revealLeaf(leaf);
+        const view = leaf.view as FileExplorerView;
+        await waitFor('the rows', () => view.fileItems[`${FOLDER}/sub`] !== undefined);
+        await (view.fileItems[FOLDER] as FolderTreeItem).setCollapsed(false);
+
+        let documentClickCount = 0;
+        document.addEventListener('click', takeFolderClick, { capture: true });
+        try {
+          app.commands.executeCommandById('explorer-multi-select:toggle-selection-mode');
+          await waitFor('selection mode', () => view.containerEl.hasClass('explorer-multi-select-selection-mode'));
+          const item = view.fileItems[`${FOLDER}/sub`];
+          if (!item) {
+            throw new Error('No row for sub.');
+          }
+          app.workspace.leftSplit.expand();
+          await app.workspace.revealLeaf(leaf);
+          view.tree.setFocusedItem(item, true);
+          await waitFor('sub in view', () => item.selfEl.isConnected && item.selfEl.getBoundingClientRect().height > 0);
+          await clickElement({ element: item.selfEl });
+          await waitFor('the tap on sub', () => view.tree.selectedDoms.has(item));
+          return { documentClickCount, paths: [...view.tree.selectedDoms].map((selectedItem) => selectedItem.file.path) };
+        } finally {
+          document.removeEventListener('click', takeFolderClick, { capture: true });
+          app.commands.executeCommandById('explorer-multi-select:toggle-selection-mode');
+        }
+
+        function getExplorerLeaf(): WorkspaceLeaf {
+          const explorerLeaf = app.workspace.getLeavesOfType('file-explorer')[0];
+          if (!explorerLeaf) {
+            throw new Error('No File explorer leaf.');
+          }
+          return explorerLeaf;
+        }
+
+        // `Folder notes` opens a folder's note from a capture listener on the document and stops the click.
+        function takeFolderClick(event: MouseEvent): void {
+          if (!(event.target instanceof Element) || !event.target.closest('.nav-folder-title')) {
+            return;
+          }
+          documentClickCount++;
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+
+        async function waitFor(step: string, isReady: () => boolean): Promise<void> {
+          try {
+            await waitUntil({ predicate: isReady, timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS });
+          } catch (error) {
+            throw new Error(`Timed out waiting for ${step}.`, { cause: error });
+          }
+        }
+      },
+      vaultPath: getTemporaryVault().path
+    });
+
+    expect(result).toEqual({ documentClickCount: 0, paths: ['ems-folder-notes/sub'] });
   });
 
   it('moves the selection through core\'s own move', async () => {
