@@ -27,6 +27,8 @@ Every row now has a checkbox. Click [Apple](<./Materials/01 Selection mode/Apple
   - selects every row the File explorer shows, inside expanded folders too.
 - **Invert selection**
   - selects every row that is not selected, and deselects the rest.
+- **Clear selection**
+  - deselects everything and keeps selection mode on, so the next taps start a fresh selection.
 - **Done**
   - clears the selection and leaves selection mode.
 

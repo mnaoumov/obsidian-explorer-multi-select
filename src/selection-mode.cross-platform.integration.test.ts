@@ -40,6 +40,7 @@ interface MoreAndDeleteResult {
 interface TapResult {
   readonly activeFilePathAfterTaps: null | string;
   readonly activeFilePathBefore: null | string;
+  readonly afterClear: ModeSnapshot;
   readonly afterFolderTap: ModeSnapshot;
   readonly afterInvert: ModeSnapshot;
   readonly afterSelectAll: ModeSnapshot;
@@ -58,7 +59,7 @@ interface TurnOffResult {
 const OFF: ModeSnapshot = { countText: null, hasCheckbox: false, isActive: false, paths: [] };
 
 describe('selection mode in the File explorer', () => {
-  it('turns on from the header button, toggles rows on tap, counts, selects all, inverts and turns off', async () => {
+  it('turns on from the header button, toggles rows on tap, counts, selects all, clears, inverts and turns off', async () => {
     const tapResult = await evalInObsidian({
       async callback({ app, lib: { clickElement, waitUntil } }): Promise<TapResult> {
         const WAIT_TIMEOUT_IN_MILLISECONDS = 1500;
@@ -97,11 +98,18 @@ describe('selection mode in the File explorer', () => {
         await waitFor('select all', () => view.tree.selectedDoms.size > 2);
         const afterSelectAll = snapshot();
 
+        await clickElement({ element: getElement('[data-action="clear"]') });
+        await waitFor('clear', () => view.tree.selectedDoms.size === 0);
+        const afterClear = snapshot();
+
+        await clickElement({ element: getElement('[data-action="select-all"]') });
+        await waitFor('select all again', () => view.tree.selectedDoms.size > 2);
+
         await clickElement({ element: getElement('[data-action="invert"]') });
         await waitFor('invert', () => view.tree.selectedDoms.size === 0);
         const afterInvert = snapshot();
 
-        return { activeFilePathAfterTaps, activeFilePathBefore, afterFolderTap, afterInvert, afterSelectAll, afterTapAgain, afterTaps, afterToggle };
+        return { activeFilePathAfterTaps, activeFilePathBefore, afterClear, afterFolderTap, afterInvert, afterSelectAll, afterTapAgain, afterTaps, afterToggle };
 
         function getElement(selector: string): HTMLElement {
           const el = view.containerEl.querySelector(selector);
@@ -247,6 +255,7 @@ describe('selection mode in the File explorer', () => {
     expect(tapResult.afterTapAgain.paths).toEqual(['ems-mode/b.md']);
     expect(tapResult.afterFolderTap).toEqual({ countText: '1 file, 1 folder', hasCheckbox: true, isActive: true, paths: ['ems-mode/b.md', 'ems-mode/sub'] });
     expect(tapResult.afterSelectAll.paths).toEqual(expect.arrayContaining(['ems-mode', 'ems-mode/a.md', 'ems-mode/b.md', 'ems-mode/sub']));
+    expect(tapResult.afterClear).toEqual({ countText: 'Nothing selected', hasCheckbox: true, isActive: true, paths: [] });
     expect(tapResult.afterInvert).toEqual({ countText: 'Nothing selected', hasCheckbox: true, isActive: true, paths: [] });
     expect(turnOffResult.afterDone).toEqual(OFF);
     expect(turnOffResult.hasActionBarAfterDone).toBe(false);
