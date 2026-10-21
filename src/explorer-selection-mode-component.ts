@@ -24,6 +24,11 @@ import {
   getVisibleItems
 } from './explorer-tree-items.ts';
 import {
+  getItemFromEvent,
+  isOnCollapseIcon,
+  registerWindowCaptureClick
+} from './explorer-window-click.ts';
+import {
   FILE_EXPLORER_MENU_SOURCE,
   findMenuItem,
   findMenuItemByIcon
@@ -121,7 +126,8 @@ export class ExplorerSelectionModeComponent extends Component {
 
   public override onload(): void {
     this.createToggleButton();
-    this.registerWindowClick();
+    // Taps are taken on the window, ahead of other plugins that take row clicks on the document.
+    registerWindowCaptureClick(this, this.view, this.onClick.bind(this));
     // Capture phase: the rows' own listeners run after these, and must not run for a tap the mode takes.
     this.registerDomEvent(this.view.containerEl, 'contextmenu', this.onContextMenu.bind(this), { capture: true });
     this.registerDomEvent(this.view.containerEl, 'touchend', this.onGestureEnd.bind(this), { capture: true });
@@ -242,16 +248,6 @@ export class ExplorerSelectionModeComponent extends Component {
     }
   }
 
-  private getItemFromEvent(mouseEvent: MouseEvent): ExplorerTreeItem | null {
-    // A row's `selfEl` sits in the row's own `el`, which is what the view maps to its file.
-    const itemEl = getEventTargetElement(mouseEvent)?.closest('.tree-item-self')?.parentElement;
-    if (!itemEl || !this.view.tree.containerEl.contains(itemEl)) {
-      return null;
-    }
-    const file = this.view.files.get(itemEl);
-    return file ? this.view.fileItems[file.path] ?? null : null;
-  }
-
   private getSelectedFiles(): TAbstractFile[] {
     return this.getSelectedItems().map((item) => item.file);
   }
@@ -289,11 +285,11 @@ export class ExplorerSelectionModeComponent extends Component {
     if (!this._isActive || mouseEvent.button !== 0 || mouseEvent.altKey || mouseEvent.ctrlKey || mouseEvent.metaKey || mouseEvent.shiftKey) {
       return;
     }
-    const item = this.getItemFromEvent(mouseEvent);
+    const item = getItemFromEvent(this.view, mouseEvent);
     if (!item) {
       return;
     }
-    if (getEventTargetElement(mouseEvent)?.closest('.collapse-icon')) {
+    if (isOnCollapseIcon(mouseEvent)) {
       // The arrow still folds the folder, so the mode can reach the rows inside it.
       return;
     }
@@ -319,7 +315,7 @@ export class ExplorerSelectionModeComponent extends Component {
     if (this._isActive || !Platform.isMobile || !this.shouldEnterOnLongPress()) {
       return;
     }
-    const item = this.getItemFromEvent(mouseEvent);
+    const item = getItemFromEvent(this.view, mouseEvent);
     if (!item) {
       return;
     }
@@ -353,43 +349,10 @@ export class ExplorerSelectionModeComponent extends Component {
     this.view.openFileContextMenu(mouseEvent, firstItem.selfEl);
   }
 
-  /**
-   * Listens for taps in the capture phase of the explorer's window, which runs before every listener on its
-   * document. Other plugins take row clicks there: `Folder notes` opens a folder's note from a capture listener
-   * on the document and stops the click, so a listener on the view would never see a tap on that folder.
-   */
-  private registerWindowClick(): void {
-    const listener = this.onClick.bind(this);
-    const options = { capture: true };
-    let win = this.view.containerEl.win;
-    win.addEventListener('click', listener, options);
-    const offWindowMigrated = this.view.containerEl.onWindowMigrated((newWin) => {
-      win.removeEventListener('click', listener, options);
-      win = newWin;
-      win.addEventListener('click', listener, options);
-    });
-    this.register(() => {
-      offWindowMigrated();
-      win.removeEventListener('click', listener, options);
-    });
-  }
-
   private selectAll(): void {
     const tree = this.view.tree;
     for (const item of getVisibleItems(tree.root)) {
       tree.selectItem(item);
     }
   }
-}
-
-/**
- * Returns the element an event happened on. A mouse event's target is always an element, but Obsidian types
- * `targetNode` as any node.
- *
- * @param uiEvent - The event.
- * @returns The target element, or `null` when the target is not an element.
- */
-export function getEventTargetElement(uiEvent: UIEvent): Element | null {
-  const targetNode = uiEvent.targetNode;
-  return targetNode?.instanceOf(Element) ? targetNode : null;
 }
