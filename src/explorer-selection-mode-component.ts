@@ -208,6 +208,15 @@ export class ExplorerSelectionModeComponent extends Component {
         invertSelection(this.view.tree);
       }
     });
+    this.addActionButton(buttonsEl, {
+      action: 'clear',
+      icon: 'list-x',
+      label: 'Clear selection',
+      onClick: (): void => {
+        // Unlike Done, the mode stays on, so the next taps start a fresh selection.
+        this.view.tree.clearSelectedDoms();
+      }
+    });
 
     const doneButtonEl = buttonsEl.createEl('button', { cls: 'mod-cta explorer-multi-select-action-bar-done', text: 'Done' });
     doneButtonEl.addEventListener('click', this.exit.bind(this));

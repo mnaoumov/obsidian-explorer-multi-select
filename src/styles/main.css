@@ -51,6 +51,7 @@
 
 .explorer-multi-select-action-bar-buttons {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--size-4-1);
 }

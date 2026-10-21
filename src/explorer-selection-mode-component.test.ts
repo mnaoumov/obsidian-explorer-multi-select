@@ -319,6 +319,23 @@ describe('ExplorerSelectionModeComponent', () => {
     expect(view.tree.selectedDoms.has(hidden)).toBe(false);
   });
 
+  it('clears the selection and stays on', () => {
+    const mode = loadMode();
+    const a = view.tree.addFile('a.md');
+    const b = view.tree.addFile('b.md');
+    mode.enter();
+    expect(actionButton('clear').hasClass('is-disabled')).toBe(true);
+
+    view.tree.selectItem(a);
+    view.tree.selectItem(b);
+    mode.refresh();
+    expect(actionButton('clear').hasClass('is-disabled')).toBe(false);
+
+    click(actionButton('clear'));
+    expect(view.tree.selectedDoms.size).toBe(0);
+    expect(mode.isActive).toBe(true);
+  });
+
   it('ignores an action that needs a selection while there is none', () => {
     const mode = loadMode();
     mode.enter();

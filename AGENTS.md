@@ -21,7 +21,7 @@ The repo was generated on 2026-10-17 with `create-obsidian-plugin` (preset `all-
 
 **Built: the selection core (design points 2 and 6).** `src/explorer-selection-component.ts` attaches to every File explorer tree. It adds Ctrl/Cmd+A, Space and a Shift+Up/Down range that shrinks when the direction reverses (`src/explorer-tree-keyboard.ts`), and it shows the selection's size in the status bar. `src/keyboard-selection.desktop.integration.test.ts` drives all of it with trusted key presses.
 
-**Built: the touch selection mode (design point 1).** `src/explorer-selection-mode-component.ts` gives every explorer a header button, and the `Toggle selection mode` command turns it on too. While it is on, CSS draws a checkbox on each row from core's `is-selected` class, a plain tap toggles the row, and a bar under the tree shows the count with Move, Bookmark, Delete, More, Select all, Invert and Done. Done clears the selection. On mobile a long-press enters the mode with the row selected, behind the `shouldEnterSelectionModeOnLongPress` setting (on by default). `src/selection-mode.cross-platform.integration.test.ts` and `src/long-press-selection-mode.android.integration.test.ts` drive it with trusted taps on desktop and Android.
+**Built: the touch selection mode (design point 1).** `src/explorer-selection-mode-component.ts` gives every explorer a header button, and the `Toggle selection mode` command turns it on too. While it is on, CSS draws a checkbox on each row from core's `is-selected` class, a plain tap toggles the row, and a bar under the tree shows the count with Move, Bookmark, Delete, More, Select all, Invert, Clear and Done. Clear empties the selection and keeps the mode on, and Done clears it and leaves the mode. On mobile a long-press enters the mode with the row selected, behind the `shouldEnterSelectionModeOnLongPress` setting (on by default). `src/selection-mode.cross-platform.integration.test.ts` and `src/long-press-selection-mode.android.integration.test.ts` drive it with trusted taps on desktop and Android.
 
 **Built: the click settings (design points 3 and 4).** `src/explorer-tree-click.ts` runs ahead of core's `handleItemSelection` on every explorer tree. With `shouldToggleSelectionOnCtrlOrCommandClick` on, a Ctrl/Cmd-click toggles the row the way core's Alt-click does, and opens nothing. With `shouldKeepSelectionOnClick` on, a plain click opens the file and keeps the selection. Both are off by default. `src/click-selection.desktop.integration.test.ts` turns them on through the settings tab and drives them with trusted clicks.
 
@@ -44,7 +44,7 @@ The repo was generated on 2026-10-17 with `create-obsidian-plugin` (preset `all-
 
 This is the starting point the owner approved. Refine it as the build goes.
 
-1. **Selection mode for touch, the biggest gap.** A toggle shows a checkbox on each row and an action bar: the count, Move, Delete, Bookmark, Select all, Invert and Done. A long-press enters it on mobile.
+1. **Selection mode for touch, the biggest gap.** A toggle shows a checkbox on each row and an action bar: the count, Move, Delete, Bookmark, Select all, Invert, Clear and Done. A long-press enters it on mobile.
 2. **Keyboard.** Ctrl/Cmd+A selects everything in the focused folder. Space toggles the focused item. Shift+Up/Down shrinks the range when the direction reverses.
 3. **Ctrl/Cmd-click toggles the selection, as an opt-in setting** that is off by default, because core uses that click to open a new tab.
 4. **Sticky selection.** An option keeps the selection when a plain click opens a file.
