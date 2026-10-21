@@ -45,6 +45,7 @@ describe('ExplorerSelectionModeComponent', () => {
   let bookmarks: BookmarksLike | null;
   let deleteSelectionSpy: () => Promise<void>;
   let isMobile: boolean;
+  let modes: ExplorerSelectionModeComponent[];
   let shouldEnterOnLongPress: boolean;
   let view: FakeExplorerView;
 
@@ -56,12 +57,17 @@ describe('ExplorerSelectionModeComponent', () => {
       getEnabledPluginById: (id): BookmarksLike | null => id === 'bookmarks' ? bookmarks : null
     };
     isMobile = Platform.isMobile;
+    modes = [];
     shouldEnterOnLongPress = true;
     view = new FakeExplorerView();
   });
 
   afterEach(() => {
     Platform.isMobile = isMobile;
+    for (const mode of modes) {
+      mode.unload();
+    }
+    view.containerEl.remove();
   });
 
   function actionButton(action: string): HTMLElement {
@@ -95,6 +101,8 @@ describe('ExplorerSelectionModeComponent', () => {
   }
 
   function loadMode(): ExplorerSelectionModeComponent {
+    // The mode listens for taps on the window, which a detached element never reaches.
+    document.body.append(view.containerEl);
     const mode = new ExplorerSelectionModeComponent({
       app: app.asOriginalType__(),
       batchDelete: castTo<ExplorerBatchDelete>({
@@ -105,6 +113,7 @@ describe('ExplorerSelectionModeComponent', () => {
       view: view.asView()
     });
     mode.load();
+    modes.push(mode);
     return mode;
   }
 
@@ -211,6 +220,48 @@ describe('ExplorerSelectionModeComponent', () => {
 
     click(file.selfEl);
     expect(view.tree.selectedDoms.has(file)).toBe(false);
+  });
+
+  it('toggles a folder before a plugin that takes folder clicks on the document, as Folder notes does', () => {
+    const mode = loadMode();
+    const folder = view.tree.addFolder('folder');
+    const documentListener = vi.fn((event_: Event) => {
+      event_.stopImmediatePropagation();
+    });
+    document.addEventListener('click', documentListener, { capture: true });
+    mode.enter();
+
+    try {
+      click(folder.selfEl);
+      expect(view.tree.selectedDoms.has(folder)).toBe(true);
+      expect(documentListener).not.toHaveBeenCalled();
+    } finally {
+      document.removeEventListener('click', documentListener, { capture: true });
+    }
+  });
+
+  it('follows the explorer to another window, and stops listening on unload', () => {
+    let onMigrated: ((win: Window) => unknown) | undefined;
+    const offMigrated = vi.fn();
+    vi.spyOn(view.containerEl, 'onWindowMigrated').mockImplementation((listener) => {
+      onMigrated = listener;
+      return offMigrated;
+    });
+    const otherWin = castTo<Window>(new EventTarget());
+    const addSpy = vi.spyOn(otherWin, 'addEventListener');
+    const removeSpy = vi.spyOn(otherWin, 'removeEventListener');
+    const mode = loadMode();
+    const file = view.tree.addFile('a.md');
+    mode.enter();
+
+    onMigrated?.(otherWin);
+    click(file.selfEl);
+    expect(view.tree.selectedDoms.size).toBe(0);
+    expect(addSpy).toHaveBeenCalledWith('click', expect.any(Function), { capture: true });
+
+    mode.unload();
+    expect(offMigrated).toHaveBeenCalled();
+    expect(removeSpy).toHaveBeenCalledWith('click', addSpy.mock.calls[0]?.[1], { capture: true });
   });
 
   it('leaves to core a tap while off, a modified or non-left click, and a tap on a folder\'s arrow', () => {
