@@ -22,10 +22,7 @@ import {
 
 import type { ExplorerBatchDelete } from './explorer-batch-delete.ts';
 
-import {
-  ExplorerSelectionModeComponent,
-  getEventTargetElement
-} from './explorer-selection-mode-component.ts';
+import { ExplorerSelectionModeComponent } from './explorer-selection-mode-component.ts';
 import { FakeExplorerView } from './test-helpers/fake-explorer-tree.test.helper.ts';
 
 interface BookmarksLike {
@@ -510,30 +507,5 @@ describe('ExplorerSelectionModeComponent', () => {
       expect(contextMenu(file.selfEl).defaultPrevented).toBe(false);
       expect(view.tree.selectedDoms.size).toBe(0);
     });
-  });
-});
-
-describe('getEventTargetElement', () => {
-  it('returns the element an event happened on, and null for any other target', () => {
-    const el = createDiv();
-    const spanEl = el.createSpan();
-    const textNode = document.createTextNode('text');
-    spanEl.append(textNode);
-    let elementTarget: Element | null | undefined;
-    let textTarget: Element | null | undefined;
-    el.addEventListener('click', (event_) => {
-      if (event_.target === el) {
-        elementTarget = getEventTargetElement(event_);
-      } else {
-        textTarget = getEventTargetElement(event_);
-      }
-    });
-
-    el.dispatchEvent(new MouseEvent('click'));
-    textNode.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    expect(elementTarget).toBe(el);
-    expect(textTarget).toBeNull();
-    expect(getEventTargetElement(new MouseEvent('click'))).toBeNull();
   });
 });

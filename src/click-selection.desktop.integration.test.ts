@@ -22,6 +22,7 @@ interface ClickResult {
   readonly afterCtrlClickAgain: string[];
   readonly afterCtrlClicks: string[];
   readonly afterPlainClick: string[];
+  readonly isFolderNotesStandInReached: boolean;
 }
 
 interface SettingResult {
@@ -40,7 +41,7 @@ describe('click selection in the File explorer', () => {
     try {
       result = await evalInObsidian({
         async callback({ app, lib: { clickElement, waitUntil } }): Promise<ClickResult> {
-          // Eight waits share the transport's 30 s cap per closure; each settles in well under a second.
+          // Ten waits share the transport's 30 s cap per closure; each settles in well under a second.
           const WAIT_TIMEOUT_IN_MILLISECONDS = 2500;
           const FOLDER = 'ems-click';
 
@@ -56,10 +57,20 @@ describe('click selection in the File explorer', () => {
 
           await clickRow(`${FOLDER}/a.md`, ['Mod'], () => view.tree.selectedDoms.size === 1);
           await clickRow(`${FOLDER}/b.md`, ['Mod'], () => view.tree.selectedDoms.size === 2);
+
+          // A stand-in for `Folder notes`, which opens a folder's note on a Ctrl/Cmd-click from a capture
+          // Listener on the document and stops the click.
+          let isFolderNotesStandInReached = false;
+          activeDocument.addEventListener('click', folderNotesStandIn, { capture: true });
+          try {
+            await clickRow(FOLDER, ['Mod'], () => view.tree.selectedDoms.size === 3);
+          } finally {
+            activeDocument.removeEventListener('click', folderNotesStandIn, { capture: true });
+          }
           const afterModuleClicks = getSelectedPaths();
           const activeFilePathAfterModuleClicks = getActiveFilePath();
 
-          await clickRow(`${FOLDER}/a.md`, ['Mod'], () => view.tree.selectedDoms.size === 1);
+          await clickRow(`${FOLDER}/a.md`, ['Mod'], () => view.tree.selectedDoms.size === 2);
           const afterModuleClickAgain = getSelectedPaths();
 
           const cPath = `${FOLDER}/c.md`;
@@ -74,7 +85,8 @@ describe('click selection in the File explorer', () => {
             activeFilePathBefore,
             afterCtrlClickAgain: afterModuleClickAgain,
             afterCtrlClicks: afterModuleClicks,
-            afterPlainClick
+            afterPlainClick,
+            isFolderNotesStandInReached
           };
 
           async function clickRow(path: string, modifiers: Modifier[], isDone: () => boolean): Promise<void> {
@@ -87,6 +99,15 @@ describe('click selection in the File explorer', () => {
             await waitFor(`${path} in view`, () => item.selfEl.isConnected && item.selfEl.getBoundingClientRect().height > 0);
             await clickElement({ element: item.selfEl, modifiers });
             await waitFor(`the click on ${path}`, isDone);
+          }
+
+          function folderNotesStandIn(mouseEvent: MouseEvent): void {
+            if (!mouseEvent.ctrlKey && !mouseEvent.metaKey) {
+              return;
+            }
+            isFolderNotesStandInReached = true;
+            mouseEvent.preventDefault();
+            mouseEvent.stopImmediatePropagation();
           }
 
           function getActiveFilePath(): null | string {
@@ -154,11 +175,12 @@ describe('click selection in the File explorer', () => {
       vaultPath: getTemporaryVault().path
     });
 
-    expect(result.afterCtrlClicks).toEqual(['ems-click/a.md', 'ems-click/b.md']);
+    expect(result.afterCtrlClicks).toEqual(['ems-click', 'ems-click/a.md', 'ems-click/b.md']);
+    expect(result.isFolderNotesStandInReached).toBe(false);
     expect(result.activeFilePathAfterCtrlClicks).toBe(result.activeFilePathBefore);
-    expect(result.afterCtrlClickAgain).toEqual(['ems-click/b.md']);
+    expect(result.afterCtrlClickAgain).toEqual(['ems-click', 'ems-click/b.md']);
     expect(result.activeFilePathAfterPlainClick).toBe('ems-click/c.md');
-    expect(result.afterPlainClick).toEqual(['ems-click/b.md']);
+    expect(result.afterPlainClick).toEqual(['ems-click', 'ems-click/b.md']);
     expect(afterPlainClickWithStickyOff).toEqual([]);
   });
 });

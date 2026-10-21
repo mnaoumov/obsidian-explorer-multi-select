@@ -12,6 +12,7 @@ import { CallbackLayoutReadyComponent } from '@mnaoumov/obsidian-lib/components/
 import { MonkeyAroundComponent } from '@mnaoumov/obsidian-lib/components/monkey-around-component';
 import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { ViewType } from '@obsidian-typings/obsidian-public-latest/implementations';
 import { Platform } from 'obsidian';
 
@@ -23,7 +24,7 @@ import type { PluginSettings } from './plugin-settings.ts';
 
 import { ExplorerBatchDelete } from './explorer-batch-delete.ts';
 import { ExplorerSelectionModeComponent } from './explorer-selection-mode-component.ts';
-import { ExplorerTreeClick } from './explorer-tree-click.ts';
+import { ExplorerTreeClickComponent } from './explorer-tree-click-component.ts';
 import {
   countItems,
   formatSelectionCount,
@@ -59,6 +60,7 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
   private readonly app: App;
   private readonly attachedTrees = new WeakSet<ExplorerTree>();
   private readonly batchDeletes = new Map<ExplorerTree, ExplorerBatchDelete>();
+  private readonly clicks = new Map<ExplorerTree, ExplorerTreeClickComponent>();
   private readonly getSettings: () => PluginSettings;
   private lastChangedTree: ExplorerTree | undefined;
   private readonly selectionModes = new Map<ExplorerTree, ExplorerSelectionModeComponent>();
@@ -159,7 +161,9 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
       this.attachedTrees.add(view.tree);
       const batchDelete = new ExplorerBatchDelete({ app: this.app, view });
       this.batchDeletes.set(view.tree, batchDelete);
-      this.attachToTree(view.tree, batchDelete);
+      const click = this.addChild(new ExplorerTreeClickComponent({ app: this.app, getSettings: this.getSettings, view }));
+      this.clicks.set(view.tree, click);
+      this.attachToTree(view.tree, batchDelete, click);
       this.selectionModes.set(
         view.tree,
         this.addChild(
@@ -181,6 +185,9 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
       // Its explorer was closed.
       this.removeChild(selectionMode);
       this.selectionModes.delete(tree);
+      // Both are added together, per explorer.
+      this.removeChild(ensureNonNullable(this.clicks.get(tree)));
+      this.clicks.delete(tree);
       this.batchDeletes.delete(tree);
     }
 
@@ -191,8 +198,7 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
     this.updateStatusBar();
   }
 
-  private attachToTree(tree: ExplorerTree, batchDelete: ExplorerBatchDelete): void {
-    const click = new ExplorerTreeClick({ app: this.app, getSettings: this.getSettings, tree });
+  private attachToTree(tree: ExplorerTree, batchDelete: ExplorerBatchDelete, click: ExplorerTreeClickComponent): void {
     this.registerMethodPatch({
       $object: tree,
       methodName: 'handleItemSelection',

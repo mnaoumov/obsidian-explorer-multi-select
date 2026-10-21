@@ -4,6 +4,7 @@ import { noop } from '@mnaoumov/typescript-lib/function';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
+  afterEach,
   beforeEach,
   describe,
   expect,
@@ -13,17 +14,17 @@ import {
 
 import type { ExplorerTreeItem } from './explorer-tree-items.ts';
 
-import { ExplorerTreeClick } from './explorer-tree-click.ts';
+import { ExplorerTreeClickComponent } from './explorer-tree-click-component.ts';
 import { PluginSettings } from './plugin-settings.ts';
 import { FakeExplorerView } from './test-helpers/fake-explorer-tree.test.helper.ts';
 
-describe('ExplorerTreeClick', () => {
+describe('ExplorerTreeClickComponent', () => {
   let app: App;
   let settings: PluginSettings;
   let view: FakeExplorerView;
   let a: ExplorerTreeItem;
   let b: ExplorerTreeItem;
-  let click: ExplorerTreeClick;
+  let click: ExplorerTreeClickComponent;
   let setActiveLeafSpy: MockInstance;
 
   beforeEach(() => {
@@ -33,8 +34,25 @@ describe('ExplorerTreeClick', () => {
     view = new FakeExplorerView();
     a = view.tree.addFile('a.md');
     b = view.tree.addFolder('b');
-    click = new ExplorerTreeClick({ app: app.asOriginalType__(), getSettings: (): PluginSettings => settings, tree: view.tree.asTree() });
+    click = new ExplorerTreeClickComponent({ app: app.asOriginalType__(), getSettings: (): PluginSettings => settings, view: view.asView() });
   });
+
+  afterEach(() => {
+    click.unload();
+    view.containerEl.remove();
+  });
+
+  function dispatchClick(el: Element, init: MouseEventInit = {}): MouseEvent {
+    const mouseEvent = new MouseEvent('click', { bubbles: true, cancelable: true, ...init });
+    el.dispatchEvent(mouseEvent);
+    return mouseEvent;
+  }
+
+  function loadClick(): void {
+    // The click listens on the window, which a detached element never reaches.
+    document.body.append(view.containerEl);
+    click.load();
+  }
 
   function doesClickOnlySelect(item: ExplorerTreeItem, init: MouseEventInit = {}): boolean {
     const tree = view.tree;
@@ -60,6 +78,56 @@ describe('ExplorerTreeClick', () => {
 
     expect(doesClickOnlySelect(a, { ctrlKey: true })).toBe(true);
     expect([...view.tree.selectedDoms]).toEqual([b]);
+  });
+
+  it('toggles a Ctrl-clicked row before a plugin that takes Ctrl-clicks on the document, as Folder notes does', () => {
+    settings.shouldToggleSelectionOnCtrlOrCommandClick = true;
+    loadClick();
+    const documentListener = vi.fn((event_: Event) => {
+      event_.stopImmediatePropagation();
+    });
+    const rowListener = vi.fn();
+    b.selfEl.addEventListener('click', rowListener);
+    document.addEventListener('click', documentListener, { capture: true });
+
+    try {
+      const mouseEvent = dispatchClick(b.selfEl, { ctrlKey: true });
+      expect([...view.tree.selectedDoms]).toEqual([b]);
+      expect(view.tree.activeDom).toBe(b);
+      expect(mouseEvent.defaultPrevented).toBe(true);
+      expect(documentListener).not.toHaveBeenCalled();
+      expect(rowListener).not.toHaveBeenCalled();
+
+      dispatchClick(b.selfEl, { ctrlKey: true });
+      expect(view.tree.selectedDoms.size).toBe(0);
+    } finally {
+      document.removeEventListener('click', documentListener, { capture: true });
+    }
+  });
+
+  it('leaves to the document a click the window listener does not take', () => {
+    loadClick();
+    const documentListener = vi.fn();
+    document.addEventListener('click', documentListener, { capture: true });
+    const collapseIconEl = castTo<Element>(b.selfEl.querySelector('.collapse-icon'));
+
+    try {
+      // The setting is off.
+      dispatchClick(a.selfEl, { ctrlKey: true });
+      settings.shouldToggleSelectionOnCtrlOrCommandClick = true;
+      // Not a Ctrl-click, a folder's arrow, Ctrl+Alt, Ctrl+Shift, a Ctrl+middle-click, and off the rows.
+      dispatchClick(a.selfEl);
+      dispatchClick(collapseIconEl, { ctrlKey: true });
+      dispatchClick(a.selfEl, { altKey: true, ctrlKey: true });
+      dispatchClick(a.selfEl, { ctrlKey: true, shiftKey: true });
+      dispatchClick(a.selfEl, { button: 1, ctrlKey: true });
+      dispatchClick(view.containerEl, { ctrlKey: true });
+
+      expect(documentListener).toHaveBeenCalledTimes(7);
+      expect(view.tree.selectedDoms.size).toBe(0);
+    } finally {
+      document.removeEventListener('click', documentListener, { capture: true });
+    }
   });
 
   it('leaves Ctrl+Alt, Ctrl+Shift and a Ctrl+middle-click to core', () => {

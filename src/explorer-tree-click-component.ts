@@ -1,16 +1,26 @@
+import type { FileExplorerView } from '@obsidian-typings/obsidian-public-latest';
 import type { App } from 'obsidian';
 
-import { Keymap } from 'obsidian';
+import {
+  Component,
+  Keymap
+} from 'obsidian';
 
 import type {
   ExplorerTree,
   ExplorerTreeItem
 } from './explorer-tree-items.ts';
 
+import {
+  getItemFromEvent,
+  isOnCollapseIcon,
+  registerWindowCaptureClick
+} from './explorer-window-click.ts';
+
 /**
  * The click settings this class reads on every click, so a change applies at once.
  */
-export interface ExplorerTreeClickSettings {
+export interface ExplorerTreeClickComponentSettings {
   /**
    * Whether a plain click keeps the selection.
    */
@@ -22,10 +32,10 @@ export interface ExplorerTreeClickSettings {
   readonly shouldToggleSelectionOnCtrlOrCommandClick: boolean;
 }
 
-interface ExplorerTreeClickConstructorParams {
+interface ExplorerTreeClickComponentConstructorParams {
   readonly app: App;
-  readonly getSettings: () => ExplorerTreeClickSettings;
-  readonly tree: ExplorerTree;
+  readonly getSettings: () => ExplorerTreeClickComponentSettings;
+  readonly view: FileExplorerView;
 }
 
 /**
@@ -35,7 +45,7 @@ interface ExplorerTreeClickConstructorParams {
  * opens the row, in a new tab for Ctrl/Cmd. Opening a file then clears the selection a second time, unless
  * the file's row is the focused one.
  */
-export class ExplorerTreeClick {
+export class ExplorerTreeClickComponent extends Component {
   /**
    * Whether the selection is to survive the `clearSelectedDoms` calls core makes right now.
    *
@@ -47,13 +57,16 @@ export class ExplorerTreeClick {
 
   private _isKeepingSelection = false;
   private readonly app: App;
-  private readonly getSettings: () => ExplorerTreeClickSettings;
+  private readonly getSettings: () => ExplorerTreeClickComponentSettings;
   private readonly tree: ExplorerTree;
+  private readonly view: FileExplorerView;
 
-  public constructor(params: ExplorerTreeClickConstructorParams) {
+  public constructor(params: ExplorerTreeClickComponentConstructorParams) {
+    super();
     this.app = params.app;
     this.getSettings = params.getSettings;
-    this.tree = params.tree;
+    this.view = params.view;
+    this.tree = params.view.tree;
   }
 
   /**
@@ -70,16 +83,16 @@ export class ExplorerTreeClick {
       return isHandledAsSelectionByCore();
     }
 
-    const settings = this.getSettings();
     if (Keymap.isModifier(mouseEvent, 'Mod')) {
-      if (!settings.shouldToggleSelectionOnCtrlOrCommandClick) {
+      // The window listener takes this click first; this handles one that reaches core some other way.
+      if (!this.shouldToggleOnClick(mouseEvent)) {
         return isHandledAsSelectionByCore();
       }
       this.toggleItem(item);
       return true;
     }
 
-    if (!settings.shouldKeepSelectionOnClick || this.tree.selectedDoms.size === 0) {
+    if (!this.getSettings().shouldKeepSelectionOnClick || this.tree.selectedDoms.size === 0) {
       return isHandledAsSelectionByCore();
     }
 
@@ -91,6 +104,35 @@ export class ExplorerTreeClick {
       // Opening a file clears the selection unless its row is the focused one.
       this.tree.setFocusedItem(item, false);
     }
+  }
+
+  public override onload(): void {
+    registerWindowCaptureClick(this, this.view, this.onWindowClick.bind(this));
+  }
+
+  /**
+   * Toggles a Ctrl/Cmd-clicked row before any listener on the document sees the click. `Folder notes` opens a
+   * folder's note on a Ctrl/Cmd-click from a capture listener on the document and stops the click, so it never
+   * reaches core's `handleItemSelection`.
+   *
+   * @param mouseEvent - The click.
+   */
+  private onWindowClick(mouseEvent: MouseEvent): void {
+    if (!this.shouldToggleOnClick(mouseEvent) || isOnCollapseIcon(mouseEvent)) {
+      return;
+    }
+    const item = getItemFromEvent(this.view, mouseEvent);
+    if (!item) {
+      return;
+    }
+    mouseEvent.preventDefault();
+    mouseEvent.stopPropagation();
+    this.toggleItem(item);
+  }
+
+  private shouldToggleOnClick(mouseEvent: MouseEvent): boolean {
+    return this.getSettings().shouldToggleSelectionOnCtrlOrCommandClick && isPrimaryClick(mouseEvent) && !mouseEvent.altKey
+      && !mouseEvent.shiftKey && Keymap.isModifier(mouseEvent, 'Mod');
   }
 
   /**
