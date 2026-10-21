@@ -159,6 +159,9 @@ describe('ExplorerSelectionComponent', () => {
 
     tree.scope.dispatch(['Mod'], 'A', createKeyboardEvent());
     expect(statusBarText()).toBe('2 files');
+
+    tree.scope.dispatch(['Shift'], ' ', createKeyboardEvent());
+    expect(statusBarText()).toBe('');
   });
 
   it('routes core\'s click handling through the click settings', () => {
@@ -225,8 +228,8 @@ describe('ExplorerSelectionComponent', () => {
     app.asOriginalType__().workspace.trigger('layout-change');
     app.asOriginalType__().workspace.trigger('layout-change');
 
-    expect(first.scope.keys).toHaveLength(4);
-    expect(second.scope.keys).toHaveLength(4);
+    expect(first.scope.keys).toHaveLength(5);
+    expect(second.scope.keys).toHaveLength(5);
   });
 
   it('clears the count when the explorer that last changed is closed', () => {

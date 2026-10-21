@@ -1,11 +1,13 @@
 # Keyboard
 
-Core's File explorer can grow a selection with Shift+Up/Down, but it cannot select everything, cannot toggle one row, and never shrinks a range once it has grown. This plugin adds the three keys, so a keyboard user can build any selection without the mouse.
+Core's File explorer can grow a selection with Shift+Up/Down, but it cannot select everything, cannot toggle one row, and never shrinks a range once it has grown. This plugin adds the keys for that, so a keyboard user can build any selection without the mouse.
 
 - **`Ctrl+A` / `Cmd+A`**
   - selects every row in the focused row's folder. Pressed again, when that adds nothing, it selects every row the File explorer shows.
 - **`Space`**
   - adds the focused row to the selection, or takes it out, where core would open it. `Enter` still opens it.
+- **`Shift+Space`**
+  - clears the whole selection, in or out of selection mode. With nothing selected, it does whatever it does elsewhere, so a `Shift+Space` hotkey you gave a command still runs.
 - **`Shift+Up` / `Shift+Down`**
   - grows the selection from where it started, and shrinks it again when you reverse direction.
 
@@ -28,6 +30,7 @@ Now try, in order:
 2. Press `Shift+Up` once. The range shrinks back to **Apple** and **Banana**. Core would have kept all three.
 3. Press `Space`. **Banana**, which has the focus, leaves the selection, and **Apple** stays. Press it again and **Banana** is back.
 4. Press `Ctrl+A` / `Cmd+A`. Everything in the folder is selected, the **Fruit basket** folder included.
+5. Press `Shift+Space`. The whole selection is cleared.
 
 ```code-button
 ---

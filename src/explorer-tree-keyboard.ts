@@ -1,3 +1,5 @@
+import type { KeymapContext } from 'obsidian';
+
 import type {
   ExplorerTree,
   ExplorerTreeItem
@@ -33,13 +35,33 @@ interface RangeState {
 }
 
 /**
- * The keyboard selection of one File explorer tree: Ctrl/Cmd+A, Space and a Shift+Up/Down range that
- * shrinks when the direction reverses.
+ * The keyboard selection of one File explorer tree: Ctrl/Cmd+A, Space, Shift+Space and a Shift+Up/Down
+ * range that shrinks when the direction reverses.
  */
 export class ExplorerTreeKeyboard {
   private rangeState: RangeState | undefined;
 
   public constructor(private readonly tree: ExplorerTree) {}
+
+  /**
+   * Handles Shift+Space: clears the whole selection, in or out of the selection mode. With nothing selected,
+   * or in a text field, it hands the key to the scope above the tree, as if the tree did not bind it, so a
+   * Shift+Space hotkey the user assigned to a command still runs there.
+   *
+   * @param keyboardEvent - The key event.
+   * @param keymapContext - The key and its modifiers.
+   * @returns The keymap result.
+   */
+  public clearSelection(keyboardEvent: KeyboardEvent, keymapContext: KeymapContext): KeymapResult {
+    const tree = this.tree;
+    if (tree.selectedDoms.size === 0 || isEditableTarget(keyboardEvent)) {
+      return tree.scope.parent?.handleKey(keyboardEvent, keymapContext) !== false;
+    }
+
+    tree.clearSelectedDoms();
+    this.rangeState = undefined;
+    return false;
+  }
 
   /**
    * Handles Shift+Up/Down: moves the focus and makes the selection the range from the anchor to the new

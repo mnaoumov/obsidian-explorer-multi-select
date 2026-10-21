@@ -40,6 +40,18 @@ interface SelectionSnapshot {
   readonly paths: string[];
   readonly statusBarText: string;
 }
+interface ShiftSpaceResult {
+  readonly afterHotkeyWithNothingSelected: ShiftSpaceSnapshot;
+  readonly afterHotkeyWithSelection: ShiftSpaceSnapshot;
+  readonly afterSelect: ShiftSpaceSnapshot;
+  readonly afterShiftSpace: ShiftSpaceSnapshot;
+  readonly afterShiftSpaceInMode: ShiftSpaceSnapshot;
+}
+
+interface ShiftSpaceSnapshot {
+  readonly isSelectionMode: boolean;
+  readonly paths: string[];
+}
 
 interface TreeLike {
   readonly scope: ScopeLike;
@@ -180,5 +192,129 @@ describe('keyboard selection in the File explorer', () => {
     expect(result.afterSpaceAgain).toEqual({ paths: [], statusBarText: '' });
     expect(result.openedFilePath).toBeNull();
     expect(result.bookmarksScopeKeyCount).toBe(0);
+  });
+
+  it('clears the whole selection with Shift+Space, in and out of the selection mode', async () => {
+    const result = await evalInObsidian({
+      async callback({ app, lib: { pressKey, waitUntil } }): Promise<ShiftSpaceResult> {
+        const WAIT_TIMEOUT_IN_MILLISECONDS = 2000;
+        const FOLDER = 'ems-shift-space';
+        const TOGGLE_COMMAND_ID = 'explorer-multi-select:toggle-selection-mode';
+
+        await app.vault.createFolder(FOLDER);
+        for (const name of ['a', 'b']) {
+          await app.vault.create(`${FOLDER}/${name}.md`, name);
+        }
+
+        const leaf = app.workspace.getLeavesOfType('file-explorer')[0];
+        if (!leaf) {
+          throw new Error('No File explorer leaf.');
+        }
+        await leaf.loadIfDeferred();
+        await app.workspace.revealLeaf(leaf);
+        const view = leaf.view as FileExplorerView;
+        const tree = view.tree;
+
+        await waitUntil({
+          predicate: () => getItem(`${FOLDER}/b.md`) !== undefined,
+          timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS
+        });
+        const folderItem = getItem(FOLDER) as FolderTreeItem;
+        await folderItem.setCollapsed(false);
+
+        let keyUpCount = 0;
+        window.addEventListener('keyup', onKeyUp, { capture: true });
+
+        selectBoth();
+        const afterSelect = snapshot();
+        await press('Space', ['Shift']);
+        const afterShiftSpace = snapshot();
+
+        app.commands.executeCommandById(TOGGLE_COMMAND_ID);
+        selectBoth();
+        await press('Space', ['Shift']);
+        const afterShiftSpaceInMode = snapshot();
+        app.commands.executeCommandById(TOGGLE_COMMAND_ID);
+
+        // With nothing selected, a Shift+Space hotkey the user assigned to a command still runs in the explorer.
+        await assignShiftSpaceInHotkeysTab();
+        app.workspace.setActiveLeaf(view.leaf, { focus: true });
+        await press('Space', ['Shift']);
+        const afterHotkeyWithNothingSelected = snapshot();
+        selectBoth();
+        await press('Space', ['Shift']);
+        const afterHotkeyWithSelection = snapshot();
+        app.hotkeyManager.removeHotkeys(TOGGLE_COMMAND_ID);
+        app.commands.executeCommandById(TOGGLE_COMMAND_ID);
+
+        window.removeEventListener('keyup', onKeyUp, { capture: true });
+        return { afterHotkeyWithNothingSelected, afterHotkeyWithSelection, afterSelect, afterShiftSpace, afterShiftSpaceInMode };
+
+        // Settings -> Hotkeys' own recorder, as a user assigns it.
+        async function assignShiftSpaceInHotkeysTab(): Promise<void> {
+          app.setting.open();
+          app.setting.openTabById('hotkeys');
+          const containerEl = app.setting.activeTab?.containerEl;
+          const searchInputEl = containerEl?.querySelector('input[type="search"]');
+          if (!(searchInputEl instanceof HTMLInputElement)) {
+            throw new TypeError('No search box in Settings -> Hotkeys.');
+          }
+          searchInputEl.value = 'Toggle selection mode';
+          searchInputEl.dispatchEvent(new Event('input'));
+          await waitUntil({ predicate: () => findAddButton() !== undefined, timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS });
+          findAddButton()?.click();
+          await press('Space', ['Shift']);
+          await waitUntil({
+            predicate: () => app.hotkeyManager.printHotkeyForCommand(TOGGLE_COMMAND_ID) === 'Shift + Space',
+            timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS
+          });
+          app.setting.close();
+
+          function findAddButton(): HTMLElement | undefined {
+            const settingEl = [...containerEl?.querySelectorAll('.setting-item') ?? []]
+              .find((el) => el.textContent.includes('Toggle selection mode'));
+            return settingEl?.querySelector<HTMLElement>('.setting-add-hotkey-button') ?? undefined;
+          }
+        }
+
+        function getItem(path: string): FileTreeItem | FolderTreeItem | undefined {
+          return view.fileItems[path];
+        }
+
+        function onKeyUp(): void {
+          keyUpCount++;
+        }
+
+        async function press(key: string, modifiers: Modifier[] = []): Promise<void> {
+          const expectedKeyUpCount = keyUpCount + 1;
+          await pressKey({ key, modifiers });
+          await waitUntil({ predicate: () => keyUpCount >= expectedKeyUpCount, timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS });
+        }
+
+        function selectBoth(): void {
+          app.workspace.setActiveLeaf(view.leaf, { focus: true });
+          view.containerEl.focus();
+          const a = getItem(`${FOLDER}/a.md`) as FileTreeItem;
+          tree.setFocusedItem(a);
+          tree.selectItem(a);
+          tree.selectItem(getItem(`${FOLDER}/b.md`) as FileTreeItem);
+        }
+
+        function snapshot(): ShiftSpaceSnapshot {
+          return {
+            isSelectionMode: view.containerEl.hasClass('explorer-multi-select-selection-mode'),
+            paths: [...tree.selectedDoms].map((item) => item.file.path).sort()
+          };
+        }
+      },
+      vaultPath: getTemporaryVault().path
+    });
+
+    expect(result.afterSelect).toEqual({ isSelectionMode: false, paths: ['ems-shift-space/a.md', 'ems-shift-space/b.md'] });
+    expect(result.afterShiftSpace).toEqual({ isSelectionMode: false, paths: [] });
+    expect(result.afterShiftSpaceInMode).toEqual({ isSelectionMode: true, paths: [] });
+    expect(result.afterHotkeyWithNothingSelected).toEqual({ isSelectionMode: true, paths: [] });
+    // The selection takes the key, so the hotkey does not toggle the mode back off.
+    expect(result.afterHotkeyWithSelection).toEqual({ isSelectionMode: true, paths: [] });
   });
 });

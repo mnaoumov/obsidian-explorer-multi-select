@@ -239,6 +239,7 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
     const keyboard = new ExplorerTreeKeyboard(tree);
     this.registerLeadingKey(tree.scope, ['Mod'], 'A', (keyboardEvent) => keyboard.selectAll(keyboardEvent));
     this.registerLeadingKey(tree.scope, [], ' ', (keyboardEvent) => keyboard.toggleFocusedItem(keyboardEvent));
+    this.registerLeadingKey(tree.scope, ['Shift'], ' ', (keyboardEvent, keymapContext) => keyboard.clearSelection(keyboardEvent, keymapContext));
     this.registerLeadingKey(tree.scope, ['Shift'], 'ArrowDown', (keyboardEvent) => keyboard.extendRange(keyboardEvent, 'forwards'));
     this.registerLeadingKey(tree.scope, ['Shift'], 'ArrowUp', (keyboardEvent) => keyboard.extendRange(keyboardEvent, 'backwards'));
   }

@@ -1,8 +1,11 @@
+import type { KeymapContext } from 'obsidian';
+
 import {
   beforeEach,
   describe,
   expect,
-  it
+  it,
+  vi
 } from 'vitest';
 
 import type { ExplorerTreeItem } from './explorer-tree-items.ts';
@@ -13,8 +16,11 @@ import {
 } from './explorer-tree-keyboard.ts';
 import {
   createKeyboardEvent,
-  FakeExplorerTree
+  FakeExplorerTree,
+  FakeScope
 } from './test-helpers/fake-explorer-tree.test.helper.ts';
+
+const SHIFT_SPACE: KeymapContext = { key: ' ', modifiers: 'Shift', vkey: ' ' };
 
 describe('ExplorerTreeKeyboard', () => {
   let tree: FakeExplorerTree;
@@ -63,6 +69,60 @@ describe('ExplorerTreeKeyboard', () => {
       expect(keyboard.toggleFocusedItem(keyboardEvent)).toBe(true);
       expect(tree.onKeyOpen).toHaveBeenCalledWith(keyboardEvent);
       expect(selectedNames()).toEqual([]);
+    });
+  });
+
+  describe('clearSelection', () => {
+    it('clears the whole selection and prevents the default', () => {
+      const a = tree.addFile('a.md');
+      const b = tree.addFile('b.md');
+      tree.selectedDoms.add(a);
+      tree.selectedDoms.add(b);
+
+      expect(keyboard.clearSelection(createKeyboardEvent(), SHIFT_SPACE)).toBe(false);
+      expect(selectedNames()).toEqual([]);
+    });
+
+    it('starts a fresh Shift range afterwards', () => {
+      const a = tree.addFile('a.md');
+      tree.addFile('b.md');
+      const c = tree.addFile('c.md');
+      tree.focusedItem = a;
+      keyboard.extendRange(createKeyboardEvent(), 'forwards');
+
+      keyboard.clearSelection(createKeyboardEvent(), SHIFT_SPACE);
+      tree.focusedItem = c;
+      keyboard.extendRange(createKeyboardEvent(), 'backwards');
+
+      expect(selectedNames()).toEqual(['b.md', 'c.md']);
+    });
+
+    it('leaves the key alone when nothing is selected and no scope above binds it', () => {
+      tree.addFile('a.md');
+      tree.scope.parent = new FakeScope();
+
+      expect(keyboard.clearSelection(createKeyboardEvent(), SHIFT_SPACE)).toBe(true);
+    });
+
+    it('leaves the key to a text field', () => {
+      tree.selectedDoms.add(tree.addFile('a.md'));
+
+      expect(keyboard.clearSelection(createKeyboardEvent(createEl('input')), SHIFT_SPACE)).toBe(true);
+      expect(selectedNames()).toEqual(['a.md']);
+    });
+
+    it('hands the key to the parent scope when it does not clear, so a Shift+Space hotkey still runs', () => {
+      const parent = new FakeScope();
+      const hotkey = vi.fn(() => false);
+      parent.register(['Shift'], ' ', hotkey);
+      tree.scope.parent = parent;
+
+      expect(keyboard.clearSelection(createKeyboardEvent(), SHIFT_SPACE)).toBe(false);
+      expect(hotkey).toHaveBeenCalledOnce();
+
+      tree.selectedDoms.add(tree.addFile('a.md'));
+      keyboard.clearSelection(createKeyboardEvent(), SHIFT_SPACE);
+      expect(hotkey).toHaveBeenCalledOnce();
     });
   });
 
