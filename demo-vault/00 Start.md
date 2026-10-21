@@ -33,7 +33,7 @@ Manual equivalent: click empty space in the File explorer, or press `Esc` there.
 | Note | What it covers |
 | --- | --- |
 | [01 Selection mode](<./01 Selection mode.md>) | Checkboxes and an action bar, for touch and for the mouse. |
-| [02 Keyboard](<./02 Keyboard.md>) | Select all, Space to toggle, and a Shift+Up/Down range that shrinks. |
+| [02 Keyboard](<./02 Keyboard.md>) | Select all, Space to toggle, Shift+Space to clear, and a Shift+Up/Down range that shrinks. |
 | [03 Selection count](<./03 Selection count.md>) | The status bar count, such as `3 files, 1 folder`. |
 | [04 Select by rule](<./04 Select by rule.md>) | Select by extension, glob pattern, property value or the explorer's filter, and invert. |
 | [05 Batch delete](<./05 Batch delete.md>) | One confirmation for deleting many items. |

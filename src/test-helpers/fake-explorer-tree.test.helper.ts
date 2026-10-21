@@ -5,6 +5,7 @@ import type {
   FolderTreeItem
 } from '@obsidian-typings/obsidian-public-latest';
 import type {
+  KeymapContext,
   KeymapEventHandler,
   KeymapEventListener,
   Modifier,
@@ -64,15 +65,28 @@ interface SelectableItem {
  */
 export class FakeScope {
   public readonly keys: FakeKeyEntry[] = [];
+  public parent: FakeScope | undefined;
 
   public asScope(): Scope {
     return castTo<Scope>(this);
   }
 
   public dispatch(modifiers: Modifier[], key: string, keyboardEvent: KeyboardEvent): unknown {
-    const compiledModifiers = modifiers.join(',');
-    const entry = this.keys.find((keyEntry) => keyEntry.key === key && keyEntry.modifiers === compiledModifiers);
-    return entry?.listener(keyboardEvent, { key, modifiers: compiledModifiers, vkey: key });
+    return this.handleKey(keyboardEvent, { key, modifiers: modifiers.join(','), vkey: key });
+  }
+
+  /**
+   * Runs the first entry matching the key, or hands the key to the parent scope when none does.
+   *
+   * @param keyboardEvent - The key event.
+   * @param keymapContext - The key and its modifiers.
+   * @returns What the listener returned.
+   */
+  public handleKey(keyboardEvent: KeyboardEvent, keymapContext: KeymapContext): unknown {
+    const entry = this.keys.find((keyEntry) => keyEntry.key === keymapContext.key && keyEntry.modifiers === keymapContext.modifiers);
+    return entry
+      ? entry.listener(keyboardEvent, keymapContext)
+      : this.parent?.handleKey(keyboardEvent, keymapContext);
   }
 
   public register(modifiers: Modifier[], key: string, listener: KeymapEventListener): KeymapEventHandler {

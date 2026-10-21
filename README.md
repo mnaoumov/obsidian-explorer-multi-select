@@ -44,7 +44,7 @@ A copy of the vault ships with every release. You can access it via any of the f
 ## What it does
 
 - **Selection mode** puts a checkbox on every row and an action bar under the tree, with Move, Bookmark, Delete, More actions, Select all, Invert selection, Clear selection and Done. A tap toggles a row instead of opening it. On mobile, a long-press turns it on. [01 Selection mode](<./demo-vault/01 Selection mode.md>)
-- **Keyboard selection**: `Ctrl+A` / `Cmd+A` selects the focused folder's rows, `Space` toggles the focused row, and a `Shift+Up` / `Shift+Down` range shrinks when you reverse direction. [02 Keyboard](<./demo-vault/02 Keyboard.md>)
+- **Keyboard selection**: `Ctrl+A` / `Cmd+A` selects the focused folder's rows, `Space` toggles the focused row, `Shift+Space` clears the selection, and a `Shift+Up` / `Shift+Down` range shrinks when you reverse direction. [02 Keyboard](<./demo-vault/02 Keyboard.md>)
 - **A selection count** in the status bar, such as `12 files, 3 folders`. [03 Selection count](<./demo-vault/03 Selection count.md>)
 - **Select by rule**: commands that select by extension, by glob pattern, by property value, or every file the explorer's filter shows, in the focused folder or everything under it, and a command that inverts the selection. [04 Select by rule](<./demo-vault/04 Select by rule.md>)
 - **One confirmation for a batch delete**, from the Delete key, the action bar or core's context menu. Each item still goes through Obsidian's own delete, so the **Deleted files** setting holds. [05 Batch delete](<./demo-vault/05 Batch delete.md>)

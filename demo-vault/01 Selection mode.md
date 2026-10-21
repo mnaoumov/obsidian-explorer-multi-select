@@ -28,7 +28,7 @@ Every row now has a checkbox. Click [Apple](<./Materials/01 Selection mode/Apple
 - **Invert selection**
   - selects every row that is not selected, and deselects the rest.
 - **Clear selection**
-  - deselects everything and keeps selection mode on, so the next taps start a fresh selection.
+  - deselects everything and keeps selection mode on, so the next taps start a fresh selection. With a keyboard, `Shift+Space` in the File explorer does the same (see [02 Keyboard](<./02 Keyboard.md>)).
 - **Done**
   - clears the selection and leaves selection mode.
 
