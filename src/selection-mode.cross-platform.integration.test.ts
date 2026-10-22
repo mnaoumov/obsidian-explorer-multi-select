@@ -440,19 +440,6 @@ describe('selection mode in the File explorer', () => {
         await tap(PATH);
         await clickAction('bookmark');
         await waitFor('the bookmark modal', () => document.querySelector('.modal.mod-bookmark .mod-cta') instanceof HTMLElement);
-        // The modal focuses its title field, and on a phone the soft keyboard that raises moves the button
-        // While the tap is on its way.
-        if (document.activeElement instanceof HTMLElement) {
-          document.activeElement.blur();
-        }
-        const saveButtonEl = document.querySelector('.modal.mod-bookmark .mod-cta');
-        if (!(saveButtonEl instanceof HTMLElement)) {
-          throw new TypeError('The bookmark modal has no Save button.');
-        }
-        await clickElement({ element: saveButtonEl });
-        const bookmarks = app.internalPlugins.getEnabledPluginById('bookmarks');
-        await waitFor('the bookmark', () => (bookmarks?.getBookmarks() ?? []).some((bookmark) => bookmark.type === 'file' && bookmark.path === PATH));
-        app.commands.executeCommandById('explorer-multi-select:toggle-selection-mode');
         return { isDone: true };
 
         async function clickAction(action: string): Promise<void> {
@@ -515,7 +502,64 @@ describe('selection mode in the File explorer', () => {
       vaultPath: getTemporaryVault().path
     });
 
+    const isBookmarked = await evalInObsidian({
+      async callback({ app, lib: { clickElement, waitUntil } }): Promise<boolean> {
+        const WAIT_TIMEOUT_IN_MILLISECONDS = 2500;
+        const SETTLE_TIMEOUT_IN_MILLISECONDS = 4000;
+        // On a loaded emulator the Save button can keep moving past `clickElement`'s own settle, or a tap can be
+        // Lost while the modal slides in, so a modal still open is tapped once more.
+        const TAP_ATTEMPTS = 2;
+        const PATH = 'ems-bookmark/note.md';
+        const bookmarks = app.internalPlugins.getEnabledPluginById('bookmarks');
+        let lastButtonLeft = NaN;
+        let lastButtonTop = NaN;
+
+        for (let attempt = 1; attempt <= TAP_ATTEMPTS && !hasBookmark(); attempt++) {
+          const saveButtonEl = document.querySelector('.modal.mod-bookmark .mod-cta');
+          if (!(saveButtonEl instanceof HTMLElement)) {
+            break;
+          }
+          // The modal focuses its title field, and on a phone the soft keyboard that raises moves the button
+          // While the tap is on its way.
+          if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+          }
+          try {
+            await waitUntil({ predicate: () => isStill(saveButtonEl), timeoutInMilliseconds: SETTLE_TIMEOUT_IN_MILLISECONDS });
+            await clickElement({ element: saveButtonEl });
+            await waitUntil({ predicate: hasBookmark, timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS });
+          } catch {
+            // Tapped again on the next attempt, or reported by the wait below.
+          }
+        }
+        try {
+          await waitUntil({ predicate: hasBookmark, timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS });
+        } catch (error) {
+          throw new Error(`Timed out waiting for the bookmark. modal=${String(document.querySelector('.modal.mod-bookmark') !== null)}`, {
+            cause: error
+          });
+        }
+        app.commands.executeCommandById('explorer-multi-select:toggle-selection-mode');
+        return hasBookmark();
+
+        function hasBookmark(): boolean {
+          return (bookmarks?.getBookmarks() ?? []).some((bookmark) => bookmark.type === 'file' && bookmark.path === PATH);
+        }
+
+        // A button in a modal that is still sliding moves between two polls, and a tap there can miss it.
+        function isStill(el: HTMLElement): boolean {
+          const rect = el.getBoundingClientRect();
+          const isUnmoved = rect.height > 0 && rect.left === lastButtonLeft && rect.top === lastButtonTop;
+          lastButtonLeft = rect.left;
+          lastButtonTop = rect.top;
+          return isUnmoved;
+        }
+      },
+      vaultPath: getTemporaryVault().path
+    });
+
     expect(result.isDone).toBe(true);
+    expect(isBookmarked).toBe(true);
   });
 
   it('opens core\'s menu for the selection, and deletes it through core\'s delete', async () => {
