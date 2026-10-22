@@ -84,16 +84,10 @@ describe('long-press selection mode in the File explorer', () => {
 });
 
 // Creates the note when it is missing, long-presses its row and returns what the long-press led to. Core's menu is
-// Closed again after the snapshot.
-//
-// Under load the emulator can read the long-press gesture as a plain tap: no menu opens, and a plain tap on a file
-// Opens it and shuts the drawer. A long-press whose outcome does not appear is therefore made once more, with the
-// Drawer opened again first.
-// TODO: Drop the retry once `obsidian-integration-testing` delivers a long-press as one, or reports one that fired no
-// `contextmenu`.
+// Closed again after the snapshot. When the emulator reads the long-press as a plain tap, `clickElement` throws a
+// Named error rather than leaving the wait for the outcome to time out.
 async function longPressRow({ app, expected, lib: { clickElement, pressKey, waitUntil }, path }: CommonArguments & LongPressInput): Promise<LongPressSnapshot> {
   const WAIT_TIMEOUT_IN_MILLISECONDS = 3000;
-  const LONG_PRESS_ATTEMPTS = 2;
   // Long enough for core's menu to have opened, had the long-press reached it.
   const MENU_WINDOW_IN_MILLISECONDS = 1000;
   const SELECTION_MODE_CLASS = 'explorer-multi-select-selection-mode';
@@ -120,25 +114,16 @@ async function longPressRow({ app, expected, lib: { clickElement, pressKey, wait
     throw new Error(`No row for ${path}.`);
   }
 
-  for (let attempt = 1; attempt <= LONG_PRESS_ATTEMPTS; attempt++) {
-    // A phone closes the sidebar whenever a menu opens over it, or when a tap opens a file.
-    app.workspace.leftSplit.expand();
-    await app.workspace.revealLeaf(leaf);
-    await waitFor('the explorer on screen', () => !app.workspace.leftSplit.collapsed && view.containerEl.getBoundingClientRect().width > 0);
-    // The tree renders only the rows in view.
-    view.tree.setFocusedItem(item, true);
-    await waitFor(`${path} in view and still`, () => isRowInViewAndStill(item.selfEl));
-    // On mobile the right button is the long-press that opens core's context menu.
-    await clickElement({ button: 'right', element: item.selfEl });
-    try {
-      await waitFor(expected === 'menu' ? 'core\'s menu' : 'selection mode', isOutcomeShown);
-      break;
-    } catch (error) {
-      if (attempt === LONG_PRESS_ATTEMPTS) {
-        throw new Error(`The long-press did not lead to ${expected} in ${String(LONG_PRESS_ATTEMPTS)} attempts.`, { cause: error });
-      }
-    }
-  }
+  // A phone closes the sidebar whenever a menu opens over it.
+  app.workspace.leftSplit.expand();
+  await app.workspace.revealLeaf(leaf);
+  await waitFor('the explorer on screen', () => !app.workspace.leftSplit.collapsed && view.containerEl.getBoundingClientRect().width > 0);
+  // The tree renders only the rows in view.
+  view.tree.setFocusedItem(item, true);
+  await waitFor(`${path} in view and still`, () => isRowInViewAndStill(item.selfEl));
+  // On mobile the right button is the long-press that opens core's context menu.
+  await clickElement({ button: 'right', element: item.selfEl });
+  await waitFor(expected === 'menu' ? 'core\'s menu' : 'selection mode', isOutcomeShown);
 
   if (expected === 'selection-mode') {
     await sleep(MENU_WINDOW_IN_MILLISECONDS);
