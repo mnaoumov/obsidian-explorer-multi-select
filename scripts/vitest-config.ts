@@ -42,6 +42,11 @@ const ANDROID_CAPTURE_TEST_FILES = 'src/**/*.android-capture.integration.test.ts
 const SCREENSHOT_STAGES_FILE = 'src/test-helpers/screenshot-stages.test.helper.ts';
 
 /**
+ * The resets the selection-mode integration suites share.
+ */
+const EXPLORER_STATE_FILE = 'src/test-helpers/explorer-state.test.helper.ts';
+
+/**
  * The AVD the mobile shots are taken on: 900x1600 at density 320, exactly the size the community directory asks
  * for, so the capture needs no crop, no rescale and no letterbox. The shared `obsidian_test` AVD cannot produce
  * it, and resizing that one at runtime recreates the activity and with it the WebView the Appium session is
@@ -125,8 +130,9 @@ export const config = defineObsidianPluginVitestConfig({
   // Pattern MATCHED, so `/\.svelte$/` rewrites the extension and leaves the rest of the specifier glued
   // To the front of the stub path. The pattern has to cover the whole id.
   editContext(context: ObsidianPluginVitestConfigContext): void {
-    // The capture suites' staging closures run inside Obsidian, so no unit test reaches them.
-    context.coverageExclude.push(SCREENSHOT_STAGES_FILE);
+    // The capture suites' staging closures and the integration suites' resets run inside Obsidian, so no unit test
+    // Reaches them.
+    context.coverageExclude.push(SCREENSHOT_STAGES_FILE, EXPLORER_STATE_FILE);
     context.unitTests.alias = [
       { find: /^.+\.(?:svelte|vue)$/u, replacement: FRAMEWORK_COMPONENT_STUB_PATH },
       { find: /^.+\.(?:css|scss)$/u, replacement: STYLESHEET_STUB_PATH },

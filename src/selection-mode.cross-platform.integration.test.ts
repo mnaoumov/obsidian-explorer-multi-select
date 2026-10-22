@@ -7,10 +7,16 @@ import type { WorkspaceLeaf } from 'obsidian';
 import { evalInObsidian } from 'obsidian-integration-testing';
 import { getTemporaryVault } from 'obsidian-integration-testing/vitest-global-setup-plugin';
 import {
+  afterEach,
   describe,
   expect,
   it
 } from 'vitest';
+
+import {
+  resetDrawer,
+  resetExplorerState
+} from './test-helpers/explorer-state.test.helper.ts';
 
 // Cross-platform: selection mode is the plugin's touch UI, so it must hold on the phone as on desktop.
 // Isolation: `npx vitest run --project integration-tests:desktop src/selection-mode.cross-platform.integration.test.ts`.
@@ -30,11 +36,6 @@ interface ModeSnapshot {
   readonly hasCheckbox: boolean;
   readonly isActive: boolean;
   readonly paths: string[];
-}
-
-interface MoreAndDeleteResult {
-  readonly deletedPathExists: boolean;
-  readonly hasMenuAfterMore: boolean;
 }
 
 interface TapResult {
@@ -59,6 +60,10 @@ interface TurnOffResult {
 const OFF: ModeSnapshot = { countText: null, hasCheckbox: false, isActive: false, paths: [] };
 
 describe('selection mode in the File explorer', () => {
+  afterEach(async () => {
+    await evalInObsidian({ callback: resetExplorerState, vaultPath: getTemporaryVault().path });
+  });
+
   it('turns on from the header button, toggles rows on tap, counts, selects all, clears, inverts and turns off', async () => {
     const tapResult = await evalInObsidian({
       async callback({ app, lib: { clickElement, waitUntil } }): Promise<TapResult> {
@@ -514,8 +519,8 @@ describe('selection mode in the File explorer', () => {
   });
 
   it('opens core\'s menu for the selection, and deletes it through core\'s delete', async () => {
-    const result = await evalInObsidian({
-      async callback({ app, lib: { clickElement, pressKey, waitUntil } }): Promise<MoreAndDeleteResult> {
+    const wasMenuOpenAfterMore = await evalInObsidian({
+      async callback({ app, lib: { clickElement, pressKey, waitUntil } }): Promise<boolean> {
         const WAIT_TIMEOUT_IN_MILLISECONDS = 2500;
         const FOLDER = 'ems-delete';
         const PATH = `${FOLDER}/note.md`;
@@ -530,20 +535,10 @@ describe('selection mode in the File explorer', () => {
         const hasMenuAfterMore = document.querySelector('.menu') !== null;
         await pressKey({ key: 'Escape' });
         await waitFor('the menu to close', () => document.querySelector('.menu') === null);
-
-        await clickAction('delete');
-        // Core asks first only while the vault's "Confirm file deletion" option is on.
-        await waitFor('the deletion or its prompt', () => isDeleted() || document.querySelector('.modal .mod-destructive') !== null);
-        const confirmButtonEl = document.querySelector('.modal .mod-destructive');
-        if (confirmButtonEl instanceof HTMLElement) {
-          await clickElement({ element: confirmButtonEl });
-        }
-        await waitFor('the deletion', () => isDeleted());
-        app.commands.executeCommandById('explorer-multi-select:toggle-selection-mode');
-        return { deletedPathExists: !isDeleted(), hasMenuAfterMore };
+        return hasMenuAfterMore;
 
         async function clickAction(action: string): Promise<void> {
-          await revealExplorer();
+          await revealExplorer(`the explorer on screen for ${action}`);
           const el = view.containerEl.querySelector(`[data-action="${CSS.escape(action)}"]`);
           if (!(el instanceof HTMLElement)) {
             throw new TypeError(`No ${action} button.`);
@@ -571,16 +566,12 @@ describe('selection mode in the File explorer', () => {
           return explorerLeaf;
         }
 
-        function isDeleted(): boolean {
-          return app.vault.getAbstractFileByPath(PATH) === null;
-        }
-
         async function tap(path: string): Promise<void> {
           const item = view.fileItems[path];
           if (!item) {
             throw new Error(`No row for ${path}.`);
           }
-          await revealExplorer();
+          await revealExplorer(`the explorer on screen for the tap on ${path}`);
           // The tree renders only the rows in view.
           view.tree.setFocusedItem(item, true);
           await waitFor(`${path} in view`, () => item.selfEl.isConnected && item.selfEl.getBoundingClientRect().height > 0);
@@ -588,25 +579,110 @@ describe('selection mode in the File explorer', () => {
           await waitFor(`the tap on ${path}`, () => view.tree.selectedDoms.has(item));
         }
 
-        async function revealExplorer(): Promise<void> {
+        async function revealExplorer(step: string): Promise<void> {
           // A phone closes the sidebar whenever a menu or a modal opens over it.
           app.workspace.leftSplit.expand();
           await app.workspace.revealLeaf(getExplorerLeaf());
-          await waitFor('the explorer on screen', () => !app.workspace.leftSplit.collapsed && view.containerEl.getBoundingClientRect().width > 0);
+          await waitFor(step, () => !app.workspace.leftSplit.collapsed && view.containerEl.getBoundingClientRect().width > 0);
         }
 
         async function waitFor(step: string, isReady: () => boolean): Promise<void> {
           try {
             await waitUntil({ predicate: isReady, timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS });
           } catch (error) {
-            throw new Error(`Timed out waiting for ${step}.`, { cause: error });
+            throw new Error(`Timed out waiting for ${step}. collapsed=${String(app.workspace.leftSplit.collapsed)}`, { cause: error });
           }
         }
       },
       vaultPath: getTemporaryVault().path
     });
 
-    expect(result.hasMenuAfterMore).toBe(true);
-    expect(result.deletedPathExists).toBe(false);
+    // After core's menu, the drawer can stay marked open while it is hidden, and expanding it then does nothing.
+    await evalInObsidian({ callback: resetDrawer, vaultPath: getTemporaryVault().path });
+
+    await evalInObsidian({
+      async callback({ app, lib: { clickElement, waitUntil } }): Promise<void> {
+        const WAIT_TIMEOUT_IN_MILLISECONDS = 2500;
+        const PATH = 'ems-delete/note.md';
+        const leaf = app.workspace.getLeavesOfType('file-explorer')[0];
+        if (!leaf) {
+          throw new Error('No File explorer leaf.');
+        }
+        const view = leaf.view as FileExplorerView;
+
+        app.workspace.leftSplit.expand();
+        await app.workspace.revealLeaf(leaf);
+        await waitFor('the explorer on screen for delete', () => !app.workspace.leftSplit.collapsed && view.containerEl.getBoundingClientRect().width > 0);
+        const deleteButtonEl = view.containerEl.querySelector('[data-action="delete"]');
+        if (!(deleteButtonEl instanceof HTMLElement)) {
+          throw new TypeError('No delete button.');
+        }
+        await clickElement({ element: deleteButtonEl });
+        // Core asks first only while the vault's "Confirm file deletion" option is on.
+        await waitFor('the deletion or its prompt', () => app.vault.getAbstractFileByPath(PATH) === null || document.querySelector('.modal .mod-destructive') !== null);
+
+        async function waitFor(step: string, isReady: () => boolean): Promise<void> {
+          try {
+            await waitUntil({ predicate: isReady, timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS });
+          } catch (error) {
+            throw new Error(`Timed out waiting for ${step}. collapsed=${String(app.workspace.leftSplit.collapsed)}`, { cause: error });
+          }
+        }
+      },
+      vaultPath: getTemporaryVault().path
+    });
+
+    const doesDeletedPathExist = await evalInObsidian({
+      async callback({ app, lib: { clickElement, waitUntil } }): Promise<boolean> {
+        const WAIT_TIMEOUT_IN_MILLISECONDS = 2500;
+        // A tap on the phone can be lost while the prompt slides in, so a prompt still open is tapped once more.
+        const TAP_ATTEMPTS = 2;
+        const PATH = 'ems-delete/note.md';
+        let lastButtonLeft = NaN;
+        let lastButtonTop = NaN;
+
+        for (let attempt = 1; attempt <= TAP_ATTEMPTS && !isDeleted(); attempt++) {
+          const confirmButtonEl = document.querySelector('.modal .mod-destructive');
+          if (!(confirmButtonEl instanceof HTMLElement)) {
+            break;
+          }
+          await waitFor('the prompt to settle', () => isStill(confirmButtonEl));
+          await clickElement({ element: confirmButtonEl });
+          try {
+            await waitUntil({ predicate: isDeleted, timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS });
+          } catch {
+            // Tapped again on the next attempt, or reported by the wait below.
+          }
+        }
+        await waitFor('the deletion', isDeleted);
+        app.commands.executeCommandById('explorer-multi-select:toggle-selection-mode');
+        return !isDeleted();
+
+        function isDeleted(): boolean {
+          return app.vault.getAbstractFileByPath(PATH) === null;
+        }
+
+        // A button in a modal that is still sliding moves between two polls, and a tap there can miss it.
+        function isStill(el: HTMLElement): boolean {
+          const rect = el.getBoundingClientRect();
+          const isUnmoved = rect.height > 0 && rect.left === lastButtonLeft && rect.top === lastButtonTop;
+          lastButtonLeft = rect.left;
+          lastButtonTop = rect.top;
+          return isUnmoved;
+        }
+
+        async function waitFor(step: string, isReady: () => boolean): Promise<void> {
+          try {
+            await waitUntil({ predicate: isReady, timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS });
+          } catch (error) {
+            throw new Error(`Timed out waiting for ${step}. modal=${String(document.querySelector('.modal-container') !== null)}`, { cause: error });
+          }
+        }
+      },
+      vaultPath: getTemporaryVault().path
+    });
+
+    expect(wasMenuOpenAfterMore).toBe(true);
+    expect(doesDeletedPathExist).toBe(false);
   });
 });
