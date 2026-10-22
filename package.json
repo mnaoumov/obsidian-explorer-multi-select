@@ -73,7 +73,7 @@
     "markdownlint-cli2": "^0.24.0",
     "nano-staged": "^1.0.2",
     "obsidian": "^1.14.4",
-    "obsidian-integration-testing": "^17.5.0",
+    "obsidian-integration-testing": "^17.5.1",
     "obsidian-test-mocks": "^7.2.3",
     "picomatch": "^4.0.7",
     "sharp": "^0.35.5",
