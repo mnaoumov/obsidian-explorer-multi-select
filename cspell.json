@@ -34,6 +34,7 @@
     "hotreload",
     "inlines",
     "jiti",
+    "katex",
     "keymap",
     "keyup",
     "lezer",
