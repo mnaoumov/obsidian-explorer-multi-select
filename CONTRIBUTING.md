@@ -52,7 +52,7 @@ When you add a user-facing feature, add or update its note in the same change.
 
 ### One-time setup before the button suite can run
 
-`npm run test:integration:demo-vault` opens a copy of `demo-vault/` in a real Obsidian and clicks every button in it. It needs the `CodeScript Toolkit` binary, which it copies out of your own `demo-vault/` to keep the run hermetic. Open `demo-vault/` in Obsidian once and let `demo-vault-helper` install `CodeScript Toolkit`; the installed copy is gitignored, so each machine does this for itself. Until then the suite fails with a message telling you exactly this.
+`npm run test:integration:demo-vault` opens a copy of `demo-vault/` in a real Obsidian and clicks every button in it. It needs the `CodeScript Toolkit` binary, which it copies out of your own `demo-vault/`. When that copy is missing or older than the version the demo vault's scripts need, the suite downloads the plugin's release into `demo-vault/.obsidian/plugins/` first, so a fresh clone needs no manual step. The installed copy is gitignored.
 
 ### Checking the vault
 
