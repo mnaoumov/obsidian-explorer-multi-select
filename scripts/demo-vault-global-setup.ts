@@ -4,14 +4,13 @@ import { CODE_SCRIPT_TOOLKIT_PLUGIN_ID } from '@mnaoumov/obsidian-dev-toolkit/de
 import { getRootFolder } from '@mnaoumov/typescript-dev-toolkit/root';
 import { join } from 'node:path';
 import process from 'node:process';
-import { buildDemoVaultPopulate } from 'obsidian-integration-testing';
+import { buildDemoVaultPopulateAsync } from 'obsidian-integration-testing';
 import { createSetup } from 'obsidian-integration-testing/vitest-global-setup-plugin';
 
 // `CodeScript Toolkit` is what turns a ```code-button fence into a button, and its root-relative
 // `require('/demoSetup.ts')` into a call. In real use the in-vault `demo-vault-helper` installs it from
-// The community registry on first launch — a NETWORK step. Seeding the copy it already installed into the
-// In-repo demo vault keeps this run hermetic and independent of that bootstrap, which is why the suite
-// Needs `demo-vault/` opened in Obsidian once before it can run. See CONTRIBUTING.md.
+// The community registry on first launch — a GUI step, and `.obsidian/plugins/*` is gitignored, so the
+// Installed copy exists only on a machine that did it, and goes stale there without anyone noticing.
 const CODE_SCRIPT_TOOLKIT_SETTINGS = {
   invocableScriptsFolder: 'Invocables',
   modulesRoot: '_assets/CodeScriptToolkit',
@@ -19,14 +18,17 @@ const CODE_SCRIPT_TOOLKIT_SETTINGS = {
   startupScriptPath: 'startup.ts'
 };
 
-function populate(): PopulateFilesParams {
-  return buildDemoVaultPopulate({
+// The ASYNC builder, not the synchronous `buildDemoVaultPopulate`: the sync one throws when the injected
+// Plugin is missing or older than `minVersion`, while the async one downloads its release assets from the
+// Repository Obsidian's community registry names. A warm checkout with an acceptable copy does no network I/O.
+async function populate(): Promise<PopulateFilesParams> {
+  return await buildDemoVaultPopulateAsync({
     demoVaultPath: join(getRootFolder() ?? process.cwd(), 'demo-vault'),
     injectPlugins: [{
       data: CODE_SCRIPT_TOOLKIT_SETTINGS,
       // The demo vault's scripts import `@mnaoumov/obsidian-lib` 6, which `CodeScript Toolkit` bundles only from 15.0.0
       // (13.8.0 to 14.x serve 3.3.1, whose names differ), so an older copy left installed in a warm checkout is
-      // re-downloaded rather than reused.
+      // Re-downloaded rather than reused.
       minVersion: '15.0.0',
       pluginId: CODE_SCRIPT_TOOLKIT_PLUGIN_ID
     }]
