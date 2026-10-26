@@ -50,6 +50,16 @@ A copy of the vault ships with every release. You can access it via any of the f
 - **One confirmation for a batch delete**, from the Delete key, the action bar or core's context menu. Each item still goes through Obsidian's own delete, so the **Deleted files** setting holds. [05 Batch delete](<./demo-vault/05 Batch delete.md>)
 - **Two opt-in click settings**: Ctrl/Cmd-click toggles a row, and a plain click keeps the selection while it opens a file. [06 Click settings](<./demo-vault/06 Click settings.md>)
 
+## Similar plugins
+
+- [`Notebook Navigator`](https://community.obsidian.md/plugins/notebook-navigator) — a dual-pane file browser in its own view, with note previews and a calendar; its list pane has multi-select with Ctrl/Cmd-click, Shift ranges and Ctrl/Cmd+A, while this plugin adds selection to the core File explorer.
+- [`Column Explorer`](https://community.obsidian.md/plugins/column-explorer) — replaces the file tree with Finder-style Miller columns and full file management, multi-select included; this plugin keeps the core tree and adds a touch selection mode and select-by-rule commands to it.
+- [`Yazi Explorer`](https://community.obsidian.md/plugins/yazi-explorer) — a keyboard-driven explorer with Miller columns, live preview, search and multi-select, opened on demand; this plugin works inside the core File explorer, on touch as well as with a keyboard.
+- [`Sidebar Keyboard Navigation`](https://community.obsidian.md/plugins/sidebar-keyboard-navigation) — Vim-like keys for the core File explorer, among them keys that toggle and clear the selection and delete the selected rows; it has no touch selection mode, select-by-rule commands or selection count.
+- [`File Commander`](https://community.obsidian.md/plugins/file-commander) — a batch file manager with its own file list, where files are filtered by folder or tag, selected, and deleted, moved, tagged or renamed together, plus link and image clean-up tools; it does not change selection in the core File explorer.
+
+Last searched for similar plugins on 2026-10-26.
+
 ## Installation
 
 The plugin is available in [the official Community Plugins repository](https://community.obsidian.md/plugins/explorer-multi-select).

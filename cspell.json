@@ -69,7 +69,8 @@
     "wabt",
     "wasm",
     "wdio",
-    "wikilinks"
+    "wikilinks",
+    "yazi"
   ],
   "ignoreRegExpList": [
     "/GHSA(-[0-9a-z]{4}){3}/g"
