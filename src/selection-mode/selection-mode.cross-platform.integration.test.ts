@@ -313,13 +313,13 @@ describe('selection mode in the File explorer', () => {
         }
 
         // `Folder notes` opens a folder's note from a capture listener on the document and stops the click.
-        function takeFolderClick(event: MouseEvent): void {
-          if (!(event.target instanceof Element) || !event.target.closest('.nav-folder-title')) {
+        function takeFolderClick($event: MouseEvent): void {
+          if (!($event.target instanceof Element) || !$event.target.closest('.nav-folder-title')) {
             return;
           }
           documentClickCount++;
-          event.preventDefault();
-          event.stopImmediatePropagation();
+          $event.preventDefault();
+          $event.stopImmediatePropagation();
         }
 
         async function waitFor(step: string, isReady: () => boolean): Promise<void> {
