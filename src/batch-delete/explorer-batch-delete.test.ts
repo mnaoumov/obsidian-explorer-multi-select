@@ -23,6 +23,7 @@ import { FakeExplorerView } from '../test-helpers/fake-explorer-tree.test.helper
 import { ExplorerBatchDelete } from './explorer-batch-delete.ts';
 
 interface ItemWithFile {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests replace the fake row's file with a vault file or an invalid value.
   file: unknown;
 }
 
