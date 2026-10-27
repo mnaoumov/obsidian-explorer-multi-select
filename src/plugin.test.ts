@@ -19,11 +19,12 @@ import { Plugin } from './plugin.ts';
 import { ExplorerSelectionComponent } from './selection-core/explorer-selection-component.ts';
 
 interface AppGlobal {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Each test installs its own global app instance.
   app: AppOriginal;
 }
 
 interface ExplorerSelectionComponentInternals {
-  getSettings: () => PluginSettings;
+  readonly getSettings: () => PluginSettings;
 }
 
 const manifest = castTo<PluginManifest>({

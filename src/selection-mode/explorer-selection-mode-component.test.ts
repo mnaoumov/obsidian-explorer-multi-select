@@ -26,15 +26,16 @@ import { FakeExplorerView } from '../test-helpers/fake-explorer-tree.test.helper
 import { ExplorerSelectionModeComponent } from './explorer-selection-mode-component.ts';
 
 interface BookmarksLike {
-  onFilesMenu: (menu: Menu, files: TAbstractFile[], source: string, leaf?: WorkspaceLeaf) => void;
+  readonly onFilesMenu: (menu: Menu, files: TAbstractFile[], source: string, leaf?: WorkspaceLeaf) => void;
 }
 
 interface InternalPluginsHolder {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Test setup replaces the app's internal plugins with a controlled stub.
   internalPlugins: InternalPluginsLike;
 }
 
 interface InternalPluginsLike {
-  getEnabledPluginById: (id: string) => BookmarksLike | null;
+  readonly getEnabledPluginById: (id: string) => BookmarksLike | null;
 }
 
 describe('ExplorerSelectionModeComponent', () => {

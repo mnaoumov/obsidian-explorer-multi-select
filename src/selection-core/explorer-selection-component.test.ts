@@ -34,15 +34,16 @@ import {
 import { ExplorerSelectionComponent } from './explorer-selection-component.ts';
 
 interface InternalPluginsHolder {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Test setup replaces the app's internal plugins with a controlled stub.
   internalPlugins: InternalPluginsLike;
 }
 
 interface InternalPluginsLike {
-  getEnabledPluginById: (id: string) => null;
+  readonly getEnabledPluginById: (id: string) => null;
 }
 
 interface MenuItemOnClickSpy {
-  onClick: ReturnType<typeof vi.fn>;
+  readonly onClick: ReturnType<typeof vi.fn>;
 }
 
 type SpiedMenuItem = MenuItem & MenuItemOnClickSpy;
