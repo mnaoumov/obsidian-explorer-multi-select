@@ -5,17 +5,17 @@ import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 import { PluginEventSourceImpl } from '@mnaoumov/obsidian-lib/plugin/plugin-event-source';
 
 import type { PluginSettings } from './plugin-settings.ts';
-import type { SelectByRuleCommandHandlerParams } from './select-by-rule-command-handler.ts';
+import type { SelectByRuleCommandHandlerParams } from './select-by-rule/select-by-rule-command-handler.ts';
 
-import { ExplorerSelectionComponent } from './explorer-selection-component.ts';
-import { InvertSelectionCommandHandler } from './invert-selection-command-handler.ts';
 import { PluginSettingsComponent } from './plugin-settings-component.ts';
 import { PluginSettingsTab } from './plugin-settings-tab.ts';
-import { SelectByExtensionCommandHandler } from './select-by-extension-command-handler.ts';
-import { SelectByGlobPatternCommandHandler } from './select-by-glob-pattern-command-handler.ts';
-import { SelectByPropertyValueCommandHandler } from './select-by-property-value-command-handler.ts';
-import { SelectFilterMatchesCommandHandler } from './select-filter-matches-command-handler.ts';
-import { ToggleSelectionModeCommandHandler } from './toggle-selection-mode-command-handler.ts';
+import { InvertSelectionCommandHandler } from './select-by-rule/invert-selection-command-handler.ts';
+import { SelectByExtensionCommandHandler } from './select-by-rule/select-by-extension-command-handler.ts';
+import { SelectByGlobPatternCommandHandler } from './select-by-rule/select-by-glob-pattern-command-handler.ts';
+import { SelectByPropertyValueCommandHandler } from './select-by-rule/select-by-property-value-command-handler.ts';
+import { SelectFilterMatchesCommandHandler } from './select-by-rule/select-filter-matches-command-handler.ts';
+import { ExplorerSelectionComponent } from './selection-core/explorer-selection-component.ts';
+import { ToggleSelectionModeCommandHandler } from './selection-mode/toggle-selection-mode-command-handler.ts';
 
 export class Plugin extends PluginBase {
   protected override async onloadImpl(): Promise<void> {
