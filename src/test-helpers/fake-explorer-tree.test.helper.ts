@@ -19,7 +19,7 @@ import { vi } from 'vitest';
 import type {
   ExplorerTree,
   ExplorerTreeItem
-} from '../explorer-tree-items.ts';
+} from '../selection-core/explorer-tree-items.ts';
 
 interface FakeExplorerTreeAddFileOptions {
   readonly isFilteredOut?: boolean;

@@ -14,9 +14,9 @@ import {
   vi
 } from 'vitest';
 
-import { ExplorerSelectionComponent } from './explorer-selection-component.ts';
 import { PluginSettings } from './plugin-settings.ts';
 import { Plugin } from './plugin.ts';
+import { ExplorerSelectionComponent } from './selection-core/explorer-selection-component.ts';
 
 interface AppGlobal {
   app: AppOriginal;
