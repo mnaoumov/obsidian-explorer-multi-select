@@ -50,7 +50,7 @@ describe('Plugin', () => {
     expect(Plugin.prototype).toBeInstanceOf(ObsidianPlugin);
   });
 
-  it('registers the selection commands and the open demo vault command', async () => {
+  it('registers the selection commands, the report bug command and the open demo vault command', async () => {
     const plugin = new Plugin(app, manifest);
     const addCommandSpy = vi.spyOn(plugin, 'addCommand');
     await plugin.onload();
@@ -62,6 +62,7 @@ describe('Plugin', () => {
         'select-by-property-value',
         'select-filter-matches',
         'invert-selection',
+        'report-bug',
         'open-demo-vault'
       ]
     ) {
