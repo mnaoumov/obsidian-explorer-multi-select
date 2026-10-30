@@ -2,6 +2,12 @@
 
 This file provides guidance to AI coding agents working with code in this repository.
 
+## Filing an issue (for AI agents and humans)
+
+Open issues through the [issue forms](https://github.com/mnaoumov/obsidian-explorer-multi-select/issues/new/choose), not as blank issues.
+
+Filing from the CLI or the API (`gh issue create --body`, or an AI agent filing for you) skips the form, and `gh issue create --template` cannot load an issue form. In that case, open the matching form in [`.github/ISSUE_TEMPLATE/`](https://github.com/mnaoumov/obsidian-explorer-multi-select/tree/HEAD/.github/ISSUE_TEMPLATE), copy every field as a `### <label>` heading in the form's order, and fill in each one. Always state the plugin version, the Obsidian version and your operating system.
+
 ## Overview
 
 `Explorer Multi-Select` fixes multi-select in Obsidian's core File explorer. Selecting several files and folders there is hard today, and on mobile it is impossible. The plugin works **inside the native pane**. It is not a replacement explorer: `Notebook Navigator`, `Column Explorer` and others already offer full selection in their own views, and users who want the core pane get nothing from them.
