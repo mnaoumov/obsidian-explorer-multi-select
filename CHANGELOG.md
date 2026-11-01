@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 1.2.0
+
+- docs(readme): point bug reports at the Report a bug command
+- feat: add a Report a bug command
+- docs: add issue-filing instructions for AI agents
+- chore(github): give the bug form the field ids bug-report links prefill
+- build(deps): override re2js to ^2.9.1 for GHSA-gg6h-894w-4m9c
+- build(deps): bump typescript-dev-toolkit to ^5.2.0
+- build(deps): bump @mnaoumov/typescript-dev-toolkit to ^5.1.0
+- chore: adopt shared keyword identifier lint rule
+- chore: adopt readonly interface members
+- test: drop obsolete text-component probe patches
+- docs(readme): combine related resources and plugin comparisons
+- refactor: group src into one folder per feature
+- docs(readme): list similar plugins
+
 ## 1.1.0
 
 - test(demo-vault): self-heal a missing or stale `CodeScript Toolkit` in the demo-vault suite

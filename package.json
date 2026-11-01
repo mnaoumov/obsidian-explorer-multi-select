@@ -1,6 +1,6 @@
 {
   "name": "explorer-multi-select",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Select many files and folders in the File explorer with ease: a touch selection mode, keyboard selection, select by rule and batch actions.",
   "keywords": [],
   "license": "MIT",
