@@ -70,8 +70,8 @@ describe('select-by-rule commands in the File explorer', () => {
 
         view.tree.clearSelectedDoms();
         app.commands.executeCommandById('explorer-multi-select:select-by-property-value');
-        await waitFor('the property picker', () => getSuggestion('status') !== null);
-        const suggestionEl = getSuggestion('status');
+        await waitFor('the property picker', () => getStatusSuggestion() !== null);
+        const suggestionEl = getStatusSuggestion();
         if (!suggestionEl) {
           throw new Error('No status suggestion.');
         }
@@ -110,8 +110,8 @@ describe('select-by-rule commands in the File explorer', () => {
           return [...view.tree.selectedDoms].map((item) => item.file.path).sort();
         }
 
-        function getSuggestion(text: string): HTMLElement | null {
-          return [...document.querySelectorAll<HTMLElement>('.modal-container .prompt-results .suggestion-item')].find((el) => el.textContent === text) ?? null;
+        function getStatusSuggestion(): HTMLElement | null {
+          return [...document.querySelectorAll<HTMLElement>('.modal-container .prompt-results .suggestion-item')].find((el) => el.textContent === 'status') ?? null;
         }
 
         async function revealExplorer(): Promise<FileExplorerView> {

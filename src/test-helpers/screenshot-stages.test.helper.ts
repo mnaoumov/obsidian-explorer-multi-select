@@ -147,7 +147,7 @@ export async function startStage({ app, lib, notePath, obsidianModule, stage }: 
 
   switch (stage) {
     case 'batch-delete': {
-      await setSelectionMode(view, false);
+      await setSelectionMode(false);
       if (!app.vault.getFolderByPath(BATCH_DELETE_FOLDER)) {
         await app.vault.createFolder(BATCH_DELETE_FOLDER);
       }
@@ -162,8 +162,8 @@ export async function startStage({ app, lib, notePath, obsidianModule, stage }: 
         predicate: () => paths.every((path) => view.fileItems[path] !== undefined),
         timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS
       });
-      await showOnly(view, ['Materials', BATCH_DELETE_FOLDER]);
-      select(view, paths);
+      await showOnly(['Materials', BATCH_DELETE_FOLDER]);
+      select(paths);
       // The Delete key's handler. It resolves only once the confirmation closes, so it is not awaited.
       view.tree.handleDeleteSelectedItems(new KeyboardEvent('keydown', { key: 'Delete' })).catch((error: unknown) => {
         console.error(error);
@@ -172,24 +172,24 @@ export async function startStage({ app, lib, notePath, obsidianModule, stage }: 
     }
     case 'more-menu':
     case 'selection-mode': {
-      await showOnly(view, ['Materials', SELECTION_MODE_FOLDER, `${SELECTION_MODE_FOLDER}/Fruit basket`]);
-      await setSelectionMode(view, true);
-      select(view, [`${SELECTION_MODE_FOLDER}/Apple.md`, `${SELECTION_MODE_FOLDER}/Cherry.md`, `${SELECTION_MODE_FOLDER}/Fruit basket`]);
+      await showOnly(['Materials', SELECTION_MODE_FOLDER, `${SELECTION_MODE_FOLDER}/Fruit basket`]);
+      await setSelectionMode(true);
+      select([`${SELECTION_MODE_FOLDER}/Apple.md`, `${SELECTION_MODE_FOLDER}/Cherry.md`, `${SELECTION_MODE_FOLDER}/Fruit basket`]);
       if (stage === 'more-menu') {
         await lib.waitUntil({
           message: 'the More button on screen',
-          predicate: () => getElement(view, '[data-action="more"]').getBoundingClientRect().width > 0,
+          predicate: () => getMoreButton().getBoundingClientRect().width > 0,
           timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS
         });
-        await lib.clickElement({ element: getElement(view, '[data-action="more"]') });
+        await lib.clickElement({ element: getMoreButton() });
       }
       break;
     }
     case 'rule-prompt': {
-      await setSelectionMode(view, false);
-      await showOnly(view, ['Materials', RULE_FOLDER]);
+      await setSelectionMode(false);
+      await showOnly(['Materials', RULE_FOLDER]);
       view.tree.clearSelectedDoms();
-      focus(view, RULE_FOLDER);
+      focusRuleFolder();
       app.commands.executeCommandById(`${PLUGIN_ID}:select-by-glob-pattern`);
       await lib.waitUntil({
         message: 'the glob pattern prompt',
@@ -209,15 +209,15 @@ export async function startStage({ app, lib, notePath, obsidianModule, stage }: 
       break;
     }
     case 'selection-count': {
-      await setSelectionMode(view, false);
-      await showOnly(view, ['Materials', RULE_FOLDER]);
+      await setSelectionMode(false);
+      await showOnly(['Materials', RULE_FOLDER]);
       const folderItem = view.fileItems[RULE_FOLDER] as FolderTreeItem;
-      select(view, folderItem.vChildren.children.map((child) => child.file.path));
-      focus(view, RULE_FOLDER);
+      select(folderItem.vChildren.children.map((child) => child.file.path));
+      focusRuleFolder();
       break;
     }
     case 'settings': {
-      await setSelectionMode(view, false);
+      await setSelectionMode(false);
       view.tree.clearSelectedDoms();
       // On mobile the settings modal is not in the document until something attaches it.
       const { containerEl } = app.setting;
@@ -247,18 +247,18 @@ export async function startStage({ app, lib, notePath, obsidianModule, stage }: 
     }
   }
 
-  function focus(explorerView: FileExplorerView, path: string): void {
-    const item = explorerView.fileItems[path];
+  function focusRuleFolder(): void {
+    const item = view.fileItems[RULE_FOLDER];
     if (!item) {
-      throw new Error(`No row for ${path}.`);
+      throw new Error(`No row for ${RULE_FOLDER}.`);
     }
-    explorerView.tree.setFocusedItem(item, true);
+    view.tree.setFocusedItem(item, true);
   }
 
-  function getElement(explorerView: FileExplorerView, selector: string): HTMLElement {
-    const el = explorerView.containerEl.querySelector(selector);
+  function getMoreButton(): HTMLElement {
+    const el = view.containerEl.querySelector('[data-action="more"]');
     if (!(el instanceof HTMLElement)) {
-      throw new TypeError(`No element matches ${selector}.`);
+      throw new TypeError('No More button.');
     }
     return el;
   }
@@ -309,24 +309,24 @@ export async function startStage({ app, lib, notePath, obsidianModule, stage }: 
     return explorerView;
   }
 
-  function select(explorerView: FileExplorerView, paths: readonly string[]): void {
-    explorerView.tree.clearSelectedDoms();
+  function select(paths: readonly string[]): void {
+    view.tree.clearSelectedDoms();
     for (const path of paths) {
-      const item = explorerView.fileItems[path];
+      const item = view.fileItems[path];
       if (!item) {
         throw new Error(`No row for ${path}.`);
       }
-      explorerView.tree.selectItem(item);
+      view.tree.selectItem(item);
     }
   }
 
-  async function setSelectionMode(explorerView: FileExplorerView, isOn: boolean): Promise<void> {
-    if (explorerView.containerEl.hasClass(SELECTION_MODE_CLASS) !== isOn) {
+  async function setSelectionMode(isOn: boolean): Promise<void> {
+    if (view.containerEl.hasClass(SELECTION_MODE_CLASS) !== isOn) {
       app.commands.executeCommandById(`${PLUGIN_ID}:toggle-selection-mode`);
     }
     await lib.waitUntil({
       message: `selection mode ${isOn ? 'on' : 'off'}`,
-      predicate: () => explorerView.containerEl.hasClass(SELECTION_MODE_CLASS) === isOn,
+      predicate: () => view.containerEl.hasClass(SELECTION_MODE_CLASS) === isOn,
       timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS
     });
   }
@@ -334,8 +334,8 @@ export async function startStage({ app, lib, notePath, obsidianModule, stage }: 
   /**
    * Expands the given folders and collapses every other one, so the tree shows just what the frame is about.
    */
-  async function showOnly(explorerView: FileExplorerView, expandedPaths: readonly string[]): Promise<void> {
-    for (const item of Object.values(explorerView.fileItems)) {
+  async function showOnly(expandedPaths: readonly string[]): Promise<void> {
+    for (const item of Object.values(view.fileItems)) {
       if (isFolderItem(item) && item.file.path !== '/') {
         await item.setCollapsed(!expandedPaths.includes(item.file.path));
       }

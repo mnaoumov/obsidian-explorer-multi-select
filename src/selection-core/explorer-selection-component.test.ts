@@ -46,8 +46,6 @@ interface MenuItemOnClickSpy {
   readonly onClick: ReturnType<typeof vi.fn>;
 }
 
-type SpiedMenuItem = MenuItem & MenuItemOnClickSpy;
-
 describe('ExplorerSelectionComponent', () => {
   let app: App;
   let leaves: WorkspaceLeaf[];
@@ -369,6 +367,8 @@ describe('ExplorerSelectionComponent', () => {
   });
 
   describe('batch delete', () => {
+    type SpiedMenuItem = MenuItem & MenuItemOnClickSpy;
+
     afterEach(() => {
       vi.restoreAllMocks();
     });

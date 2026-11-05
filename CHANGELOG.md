@@ -7,7 +7,7 @@
 - docs: add issue-filing instructions for AI agents
 - chore(github): give the bug form the field ids bug-report links prefill
 - build(deps): override re2js to ^2.9.1 for GHSA-gg6h-894w-4m9c
-- build(deps): bump typescript-dev-toolkit to ^5.2.0
+- build(deps): bump `typescript-dev-toolkit` to ^5.2.0
 - build(deps): bump @mnaoumov/typescript-dev-toolkit to ^5.1.0
 - chore: adopt shared keyword identifier lint rule
 - chore: adopt readonly interface members
@@ -20,12 +20,12 @@
 
 - test(demo-vault): self-heal a missing or stale `CodeScript Toolkit` in the demo-vault suite
 - test(demo-vault): floor `CodeScript Toolkit` at 15.0.0
-- test: drop the longPressRow retry on obsidian-integration-testing 17.5.1
+- test: drop the longPressRow retry on `obsidian-integration-testing` 17.5.1
 - test: wait for the bookmark modal's Save button to settle on Android
 - test: harden the Android selection-mode suites against flakes and cascades
 - chore(deps): move to @mnaoumov/obsidian-lib 6 and @mnaoumov/obsidian-dev-toolkit 5
 - docs: shorten the debugging section
-- chore: replace leftover obsidian-dev-utils references with @mnaoumov/obsidian-lib
+- chore: replace leftover `obsidian-dev-utils` references with @mnaoumov/obsidian-lib
 - docs(readme): lead the Debugging section with `Advanced Debug Mode`
 - feat: clear the File explorer selection with Shift+Space
 - fix: toggle folders on Ctrl/Cmd-click when `Folder notes` takes their clicks

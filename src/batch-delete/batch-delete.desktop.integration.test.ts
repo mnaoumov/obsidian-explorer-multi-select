@@ -70,7 +70,7 @@ describe('batch delete in the File explorer', () => {
           tree.selectItem(getItem(path) as FileTreeItem);
         }
         tree.setFocusedItem(getItem(`${FOLDER}/a.md`) as FileTreeItem);
-        await press('Delete');
+        await pressDelete();
         await wait(() => document.querySelector(BATCH_MODAL_SELECTOR) !== null);
         const batchModalCount = document.querySelectorAll('.modal').length;
         const batchModalTitle = document.querySelector('.modal .modal-title')?.textContent ?? '';
@@ -99,7 +99,7 @@ describe('batch delete in the File explorer', () => {
         tree.selectItem(getItem(`${FOLDER}/e.md`) as FileTreeItem);
         tree.setFocusedItem(getItem(`${FOLDER}/e.md`) as FileTreeItem);
         view.containerEl.focus();
-        await press('Delete');
+        await pressDelete();
         await wait(() => document.querySelector('.modal') !== null);
         const isCoreModalOurs = document.querySelector(BATCH_MODAL_SELECTOR) !== null;
         clickModalButton('.modal', 'Cancel');
@@ -133,9 +133,9 @@ describe('batch delete in the File explorer', () => {
           keyUpCount++;
         }
 
-        async function press(key: string): Promise<void> {
+        async function pressDelete(): Promise<void> {
           const expectedKeyUpCount = keyUpCount + 1;
-          await pressKey({ key, modifiers: [] });
+          await pressKey({ key: 'Delete', modifiers: [] });
           await wait(() => keyUpCount >= expectedKeyUpCount);
         }
 

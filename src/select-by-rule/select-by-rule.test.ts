@@ -42,11 +42,11 @@ describe('select-by-rule', () => {
     tree = new FakeExplorerTree();
   });
 
-  function matchNames(rule: ItemRule | null, folder: FileTreeItemParent = tree.root, shouldIncludeSubfolders = true): string[] {
+  function matchNames(rule: ItemRule | null, folder: FileTreeItemParent = tree.root): string[] {
     if (!rule) {
       throw new Error('No rule.');
     }
-    return getCandidateItems(folder, shouldIncludeSubfolders)
+    return getCandidateItems(folder, true)
       .filter((item) => rule(item, getRelativePath(item, folder)))
       .map((item) => getRelativePath(item, tree.root));
   }
@@ -107,8 +107,8 @@ describe('select-by-rule', () => {
       }
     }
 
-    function rule(key: string, value: string): ItemRule {
-      return createPropertyRule((file: TFile) => frontmatterByPath.get(file.path), key, value);
+    function statusRule(value: string): ItemRule {
+      return createPropertyRule((file: TFile) => frontmatterByPath.get(file.path), 'status', value);
     }
 
     it('matches a scalar or any list element as text, ignoring case', () => {
@@ -120,9 +120,9 @@ describe('select-by-rule', () => {
       addNote('none.md');
       tree.addFolder('folder');
 
-      expect(matchNames(rule('status', ' done '))).toEqual(['scalar.md', 'list.md']);
-      expect(matchNames(rule('status', '1'))).toEqual(['number.md']);
-      expect(matchNames(rule('status', 'TRUE'))).toEqual(['boolean.md']);
+      expect(matchNames(statusRule(' done '))).toEqual(['scalar.md', 'list.md']);
+      expect(matchNames(statusRule('1'))).toEqual(['number.md']);
+      expect(matchNames(statusRule('TRUE'))).toEqual(['boolean.md']);
     });
 
     it('matches every note that has the property when the value is empty', () => {
@@ -130,15 +130,15 @@ describe('select-by-rule', () => {
       addNote('set.md', { status: 'x' });
       addNote('other.md', { tags: 'x' });
 
-      expect(matchNames(rule('status', ''))).toEqual(['empty.md', 'set.md']);
+      expect(matchNames(statusRule(''))).toEqual(['empty.md', 'set.md']);
     });
 
     it('compares an empty or an object value as text', () => {
       addNote('empty.md', { status: [null, undefined] });
       addNote('object.md', { status: { a: 1 } });
 
-      expect(matchNames(rule('status', '{"a":1}'))).toEqual(['object.md']);
-      expect(matchNames(rule('status', 'null'))).toEqual([]);
+      expect(matchNames(statusRule('{"a":1}'))).toEqual(['object.md']);
+      expect(matchNames(statusRule('null'))).toEqual([]);
     });
   });
 
