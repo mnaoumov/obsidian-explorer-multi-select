@@ -113,16 +113,16 @@ describe('ExplorerTreeKeyboard', () => {
 
     it('hands the key to the parent scope when it does not clear, so a Shift+Space hotkey still runs', () => {
       const parent = new FakeScope();
-      const hotkey = vi.fn(() => false);
-      parent.register(['Shift'], ' ', hotkey);
+      const shouldHotkeyRunDefault = vi.fn(() => false);
+      parent.register(['Shift'], ' ', shouldHotkeyRunDefault);
       tree.scope.parent = parent;
 
       expect(keyboard.clearSelection(createKeyboardEvent(), SHIFT_SPACE)).toBe(false);
-      expect(hotkey).toHaveBeenCalledOnce();
+      expect(shouldHotkeyRunDefault).toHaveBeenCalledOnce();
 
       tree.selectedDoms.add(tree.addFile('a.md'));
       keyboard.clearSelection(createKeyboardEvent(), SHIFT_SPACE);
-      expect(hotkey).toHaveBeenCalledOnce();
+      expect(shouldHotkeyRunDefault).toHaveBeenCalledOnce();
     });
   });
 

@@ -286,11 +286,8 @@ export class ExplorerSelectionModeComponent extends Component {
       return;
     }
     const item = getItemFromEvent(this.view, mouseEvent);
-    if (!item) {
-      return;
-    }
-    if (isOnCollapseIcon(mouseEvent)) {
-      // The arrow still folds the folder, so the mode can reach the rows inside it.
+    // A click off a row is not the mode's, and the arrow still folds the folder, so the mode can reach the rows inside it.
+    if (!item || isOnCollapseIcon(mouseEvent)) {
       return;
     }
 

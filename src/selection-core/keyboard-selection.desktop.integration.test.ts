@@ -227,22 +227,22 @@ describe('keyboard selection in the File explorer', () => {
 
         selectBoth();
         const afterSelect = snapshot();
-        await press('Space', ['Shift']);
+        await pressShiftSpace();
         const afterShiftSpace = snapshot();
 
         app.commands.executeCommandById(TOGGLE_COMMAND_ID);
         selectBoth();
-        await press('Space', ['Shift']);
+        await pressShiftSpace();
         const afterShiftSpaceInMode = snapshot();
         app.commands.executeCommandById(TOGGLE_COMMAND_ID);
 
         // With nothing selected, a Shift+Space hotkey the user assigned to a command still runs in the explorer.
         await assignShiftSpaceInHotkeysTab();
         app.workspace.setActiveLeaf(view.leaf, { focus: true });
-        await press('Space', ['Shift']);
+        await pressShiftSpace();
         const afterHotkeyWithNothingSelected = snapshot();
         selectBoth();
-        await press('Space', ['Shift']);
+        await pressShiftSpace();
         const afterHotkeyWithSelection = snapshot();
         app.hotkeyManager.removeHotkeys(TOGGLE_COMMAND_ID);
         app.commands.executeCommandById(TOGGLE_COMMAND_ID);
@@ -263,7 +263,7 @@ describe('keyboard selection in the File explorer', () => {
           searchInputEl.dispatchEvent(new Event('input'));
           await waitUntil({ predicate: () => findAddButton() !== undefined, timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS });
           findAddButton()?.click();
-          await press('Space', ['Shift']);
+          await pressShiftSpace();
           await waitUntil({
             predicate: () => app.hotkeyManager.printHotkeyForCommand(TOGGLE_COMMAND_ID) === 'Shift + Space',
             timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS
@@ -285,9 +285,9 @@ describe('keyboard selection in the File explorer', () => {
           keyUpCount++;
         }
 
-        async function press(key: string, modifiers: Modifier[] = []): Promise<void> {
+        async function pressShiftSpace(): Promise<void> {
           const expectedKeyUpCount = keyUpCount + 1;
-          await pressKey({ key, modifiers });
+          await pressKey({ key: 'Space', modifiers: ['Shift'] });
           await waitUntil({ predicate: () => keyUpCount >= expectedKeyUpCount, timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS });
         }
 

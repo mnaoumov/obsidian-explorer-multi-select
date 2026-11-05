@@ -128,8 +128,8 @@ export abstract class SelectByRuleCommandHandler extends GlobalCommandHandler {
       return null;
     }
     // The validator accepted the input, so it builds a rule.
-    const rule = ensureNonNullable(params.createRule(input));
-    return getCandidateItems(folder, this.shouldIncludeSubfolders).filter((item) => rule(item, getRelativePath(item, folder)));
+    const isMatch = ensureNonNullable(params.createRule(input));
+    return getCandidateItems(folder, this.shouldIncludeSubfolders).filter((item) => isMatch(item, getRelativePath(item, folder)));
   }
 }
 
