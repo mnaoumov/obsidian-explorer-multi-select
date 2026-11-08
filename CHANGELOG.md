@@ -2,50 +2,58 @@
 
 ## 1.2.0
 
-- docs(readme): point bug reports at the Report a bug command
-- feat: add a Report a bug command
-- docs: add issue-filing instructions for AI agents
-- chore(github): give the bug form the field ids bug-report links prefill
-- build(deps): override re2js to ^2.9.1 for GHSA-gg6h-894w-4m9c
-- build(deps): bump `typescript-dev-toolkit` to ^5.2.0
-- build(deps): bump @mnaoumov/typescript-dev-toolkit to ^5.1.0
-- chore: adopt shared keyword identifier lint rule
-- chore: adopt readonly interface members
-- test: drop obsolete text-component probe patches
-- docs(readme): combine related resources and plugin comparisons
-- refactor: group src into one folder per feature
-- docs(readme): list similar plugins
+This release has 1 new feature and 4 documentation changes. 8 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### New
+
+- add a Report a bug command
+
+### Documentation
+
+- **readme:** point bug reports at the Report a bug command
+- add issue-filing instructions for AI agents
+- **readme:** combine related resources and plugin comparisons
+- **readme:** list similar plugins
 
 ## 1.1.0
 
-- test(demo-vault): self-heal a missing or stale `CodeScript Toolkit` in the demo-vault suite
-- test(demo-vault): floor `CodeScript Toolkit` at 15.0.0
-- test: drop the longPressRow retry on `obsidian-integration-testing` 17.5.1
-- test: wait for the bookmark modal's Save button to settle on Android
-- test: harden the Android selection-mode suites against flakes and cascades
-- chore(deps): move to @mnaoumov/obsidian-lib 6 and @mnaoumov/obsidian-dev-toolkit 5
-- docs: shorten the debugging section
-- chore: replace leftover `obsidian-dev-utils` references with @mnaoumov/obsidian-lib
-- docs(readme): lead the Debugging section with `Advanced Debug Mode`
-- feat: clear the File explorer selection with Shift+Space
-- fix: toggle folders on Ctrl/Cmd-click when `Folder notes` takes their clicks
-- feat: add a Clear selection button to the selection mode's action bar
-- fix: toggle folders in selection mode when `Folder notes` takes their clicks
-- docs: link the community directory listing from the installation section
-- docs: link the changelog from the README and record the 1.0.0 release
+This release has 2 new features, 2 fixes and 4 documentation changes. 7 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### New
+
+- clear the File explorer selection with Shift+Space
+- add a Clear selection button to the selection mode's action bar
+
+### Fixed
+
+- toggle folders on Ctrl/Cmd-click when Folder notes takes their clicks
+- toggle folders in selection mode when Folder notes takes their clicks
+
+### Documentation
+
+- shorten the debugging section
+- **readme:** lead the Debugging section with `Advanced Debug Mode`
+- link the community directory listing from the installation section
+- link the changelog from the README and record the 1.0.0 release
 
 ## 1.0.0
 
-- test(integration): run the desktop and Android suites in the release preflight
-- docs: add the desktop and mobile screenshots, captured from the demo vault
-- build(deps): bump @mnaoumov/obsidian-dev-toolkit to ^3.6.0
-- docs: document every `Explorer Multi-Select` feature in the demo vault and README
-- feat: delete a multi-item selection in the File explorer with one confirmation
-- feat: add select-by-rule commands to the File explorer
-- feat: add Ctrl/Cmd-click toggling and sticky selection to the File explorer
-- feat: add a touch selection mode to the File explorer
-- feat: add keyboard selection and a status-bar count to the File explorer
-- ci: pin Node 26 in .nvmrc
-- fix(demo-vault): stop linking to the gitignored scratch note
-- docs: record the approved design in AGENTS.md
-- chore: scaffold `Explorer Multi-Select` with create-obsidian-plugin
+This release has 5 new features, 1 fix and 3 documentation changes. 4 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### New
+
+- delete a multi-item selection in the File explorer with one confirmation
+- add select-by-rule commands to the File explorer
+- add Ctrl/Cmd-click toggling and sticky selection to the File explorer
+- add a touch selection mode to the File explorer
+- add keyboard selection and a status-bar count to the File explorer
+
+### Fixed
+
+- **demo-vault:** stop linking to the gitignored scratch note
+
+### Documentation
+
+- add the desktop and mobile screenshots, captured from the demo vault
+- document every `Explorer Multi-Select` feature in the demo vault and README
+- record the approved design in AGENTS.md
