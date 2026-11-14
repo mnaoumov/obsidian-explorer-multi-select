@@ -5,10 +5,10 @@ import type {
   TAbstractFile
 } from 'obsidian';
 
+import { ComponentEx } from '@mnaoumov/obsidian-lib/components/component-ex';
 import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
 import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import {
-  Component,
   Menu,
   Platform,
   setIcon,
@@ -69,7 +69,7 @@ interface ExplorerSelectionModeComponentConstructorParams {
  * Delete asks once for the whole selection, and More opens the context menu, so every plugin that adds to it
  * through `files-menu` is there too.
  */
-export class ExplorerSelectionModeComponent extends Component {
+export class ExplorerSelectionModeComponent extends ComponentEx {
   /**
    * Whether the mode is on.
    *

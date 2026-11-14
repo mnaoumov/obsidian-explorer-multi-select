@@ -1,10 +1,8 @@
 import type { FileExplorerView } from '@obsidian-typings/obsidian-public-latest';
 import type { App } from 'obsidian';
 
-import {
-  Component,
-  Keymap
-} from 'obsidian';
+import { ComponentEx } from '@mnaoumov/obsidian-lib/components/component-ex';
+import { Keymap } from 'obsidian';
 
 import type {
   ExplorerTree,
@@ -45,7 +43,7 @@ interface ExplorerTreeClickComponentConstructorParams {
  * opens the row, in a new tab for Ctrl/Cmd. Opening a file then clears the selection a second time, unless
  * the file's row is the focused one.
  */
-export class ExplorerTreeClickComponent extends Component {
+export class ExplorerTreeClickComponent extends ComponentEx {
   /**
    * Whether the selection is to survive the `clearSelectedDoms` calls core makes right now.
    *
