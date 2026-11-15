@@ -17,18 +17,32 @@ const PLUGIN_ID = 'explorer-multi-select';
 const BATCH_DELETE_FOLDER_PATH = 'Materials/05 Batch delete';
 const BATCH_DELETE_NOTE_NAMES = ['Draft 1', 'Draft 2', 'Draft 3'];
 
-type ExplorerRow = FileTreeItem | FolderTreeItem;
-
 /**
  * The settings this vault's buttons change, by the key each is stored under in `data.json`.
  */
 type BooleanSettingKey = 'shouldEnterSelectionModeOnLongPress' | 'shouldKeepSelectionOnClick' | 'shouldToggleSelectionOnCtrlOrCommandClick';
+
+type ExplorerRow = FileTreeItem | FolderTreeItem;
 
 const DEFAULT_SETTINGS: Record<BooleanSettingKey, boolean> = {
   shouldEnterSelectionModeOnLongPress: true,
   shouldKeepSelectionOnClick: false,
   shouldToggleSelectionOnCtrlOrCommandClick: false
 };
+
+/**
+ * Clears the File explorer's filter.
+ *
+ * Manual equivalent: empty the filter field at the top of the File explorer.
+ */
+export async function clearExplorerFilter(app: App): Promise<void> {
+  const view = await revealExplorer(app);
+  if (!view) {
+    return;
+  }
+  view.onSearchChanged('');
+  new Notice('The file explorer shows every row again.');
+}
 
 /**
  * Clears the File explorer's selection.
@@ -42,20 +56,6 @@ export async function clearSelection(app: App): Promise<void> {
   }
   view.tree.clearSelectedDoms();
   new Notice('The selection is empty again.');
-}
-
-/**
- * Clears the File explorer's filter.
- *
- * Manual equivalent: empty the filter field at the top of the File explorer.
- */
-export async function clearExplorerFilter(app: App): Promise<void> {
-  const view = await revealExplorer(app);
-  if (!view) {
-    return;
-  }
-  view.onSearchChanged('');
-  new Notice('The File explorer shows every row again.');
 }
 
 /**
@@ -93,7 +93,7 @@ export async function deleteSelection(app: App): Promise<void> {
     return;
   }
   // The handler is the Delete key's, so it takes the key event it would have been given.
-  await view.tree.handleDeleteSelectedItems?.(new KeyboardEvent('keydown', { key: 'Delete' }));
+  await view.tree.handleDeleteSelectedItems(new KeyboardEvent('keydown', { key: 'Delete' }));
 }
 
 /**
@@ -144,6 +144,17 @@ export async function resetSettings(app: App): Promise<void> {
 }
 
 /**
+ * Runs one of the plugin's commands.
+ *
+ * Manual equivalent: run the command from the Command Palette (`Ctrl+P` / `Cmd+P`).
+ */
+export function runCommand(app: App, commandName: string): void {
+  if (!app.commands.executeCommandById(`${PLUGIN_ID}:${commandName}`)) {
+    new Notice(`The command ${commandName} cannot run right now. Is the File explorer open?`);
+  }
+}
+
+/**
  * Runs one of the plugin's commands with the given folder focused in the File explorer, so a select-by-rule
  * command applies to that folder.
  *
@@ -160,17 +171,6 @@ export async function runCommandInFolder(app: App, folderPath: string, commandNa
   }
   view.tree.setFocusedItem(folderRow, true);
   runCommand(app, commandName);
-}
-
-/**
- * Runs one of the plugin's commands.
- *
- * Manual equivalent: run the command from the Command Palette (`Ctrl+P` / `Cmd+P`).
- */
-export function runCommand(app: App, commandName: string): void {
-  if (!app.commands.executeCommandById(`${PLUGIN_ID}:${commandName}`)) {
-    new Notice(`The command ${commandName} cannot run right now. Is the File explorer open?`);
-  }
 }
 
 /**
@@ -219,11 +219,11 @@ export async function selectPaths(app: App, paths: readonly string[], message?: 
 /**
  * Turns one of the plugin's settings on or off. The change applies live, with no reload.
  *
- * Manual equivalent: flip the same toggle in **Settings -> Community plugins -> Explorer Multi-Select**.
+ * Manual equivalent: flip the same toggle in **Settings -> Community plugins -> `Explorer Multi-Select`**.
  */
-export async function setSetting(app: App, key: BooleanSettingKey, value: boolean): Promise<void> {
-  await configureCommunityPlugin({ app, pluginId: PLUGIN_ID, settings: { [key]: value } });
-  new Notice(`${key} is now ${String(value)}. It is live, so no reload is needed.`);
+export async function setSetting(app: App, key: BooleanSettingKey, isEnabled: boolean): Promise<void> {
+  await configureCommunityPlugin({ app, pluginId: PLUGIN_ID, settings: { [key]: isEnabled } });
+  new Notice(`${key} is now ${String(isEnabled)}. It is live, so no reload is needed.`);
 }
 
 function isFolderRow(row: ExplorerRow): row is FolderTreeItem {
@@ -233,7 +233,7 @@ function isFolderRow(row: ExplorerRow): row is FolderTreeItem {
 async function revealExplorer(app: App): Promise<FileExplorerView | null> {
   const leaf = app.workspace.getLeavesOfType('file-explorer')[0];
   if (!leaf) {
-    new Notice('The File explorer is closed. Open it with the "Files: Show file explorer" command, then press the button again.');
+    new Notice('The file explorer is closed. Open it from the command palette, then press the button again.');
     return null;
   }
   await leaf.loadIfDeferred();
