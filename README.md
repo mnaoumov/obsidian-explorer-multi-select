@@ -56,13 +56,14 @@ A copy of the vault ships with every release. You can access it via any of the f
 
 | Plugin | Features | How `Explorer Multi-Select` differs |
 | --- | --- | --- |
-| [`Column Explorer`](https://community.obsidian.md/plugins/column-explorer) | Miller-column file manager; multi-select | Same selection goal; keeps core tree; touch selection mode and rule-based commands |
-| [`File Commander`](https://community.obsidian.md/plugins/file-commander) | Separate batch-file list; folder/tag filters; delete/move/tag/rename; link/image cleanup | Different surface: changes selection inside core File explorer |
-| [`Notebook Navigator`](https://community.obsidian.md/plugins/notebook-navigator) | Dedicated dual-pane browser; previews; calendar; keyboard multi-select | Same selection goal; extends core File explorer rather than replacing it |
-| [`Sidebar Keyboard Navigation`](https://community.obsidian.md/plugins/sidebar-keyboard-navigation) | Vim-like core-explorer keys; selection toggle/clear; delete selection | Broader selection controls: touch mode, rule commands and selection count |
-| [`Yazi Explorer`](https://community.obsidian.md/plugins/yazi-explorer) | On-demand keyboard explorer; Miller columns; preview/search; multi-select | Same selection goal; works in core File explorer; touch support |
+| [`Column Explorer`](https://community.obsidian.md/plugins/column-explorer) | Miller-column file manager that replaces the tree; Ctrl/Cmd- and Shift-click multi-select; long-press selection mode with a bottom bar on mobile | Same selection goal in its own view; keeps the core File explorer; adds select by rule, keyboard selection keys and one batch-delete confirmation |
+| [`Drawer Explorer`](https://community.obsidian.md/plugins/drawer-explorer) | Pop-up drawer file tree; vim-style keys; `Space` and visual-range selection; bulk delete, cut, copy and paste | Same selection goal in its own drawer; works in the core File explorer; adds a touch selection mode and select by rule; omits modal vim keys |
+| [`File Commander`](https://community.obsidian.md/plugins/file-commander) | Separate batch-file list; folder and tag filters; delete, move, tag and rename; link and image cleanup | Different surface: selects inside the core File explorer instead of a list of its own; omits tagging, renaming and cleanup |
+| [`Notebook Navigator`](https://community.obsidian.md/plugins/notebook-navigator) | Dual-pane browser that replaces the File explorer; previews; calendar; keyboard and click multi-select | Same selection goal in its own view; keeps the core File explorer; adds a touch selection mode and select by rule |
+| [`Sidebar Keyboard Navigation`](https://community.obsidian.md/plugins/sidebar-keyboard-navigation) | Vim-like keys in the core File explorer; selection toggle and clear; delete or open the selection | Overlaps in the core File explorer on toggle, clear and delete; adds a touch selection mode, select by rule, select all and a selection count; omits vim navigation |
+| [`Yazi Explorer`](https://community.obsidian.md/plugins/yazi-explorer) | On-demand keyboard explorer; Miller columns; preview and search; multi-select, select all and invert | Same selection goal in its own view; works in the core File explorer; adds a touch selection mode and select by rule |
 
-Last searched for similar plugins on 2026-10-26.
+Last searched for similar plugins on 2026-11-22.
 
 ## Installation
 
