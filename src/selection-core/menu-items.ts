@@ -15,10 +15,10 @@ export const FILE_EXPLORER_MENU_SOURCE = 'file-explorer-context-menu';
  *
  * @param menu - The menu.
  * @param isMatch - Tells the item to find.
- * @returns The item, or `undefined` when none matches.
+ * @returns The item, or `null` when none matches.
  */
-export function findMenuItem(menu: Menu, isMatch: (item: MenuItem) => boolean): MenuItem | undefined {
-  return menu.items.find((item): item is MenuItem => isMenuItem(item) && isMatch(item));
+export function findMenuItem(menu: Menu, isMatch: (item: MenuItem) => boolean): MenuItem | null {
+  return menu.items.find((item): item is MenuItem => isMenuItem(item) && isMatch(item)) ?? null;
 }
 
 /**
@@ -27,9 +27,9 @@ export function findMenuItem(menu: Menu, isMatch: (item: MenuItem) => boolean): 
  *
  * @param menu - The menu.
  * @param iconClass - The icon's class, such as `lucide-trash-2`.
- * @returns The item, or `undefined` when none shows the icon.
+ * @returns The item, or `null` when none shows the icon.
  */
-export function findMenuItemByIcon(menu: Menu, iconClass: string): MenuItem | undefined {
+export function findMenuItemByIcon(menu: Menu, iconClass: string): MenuItem | null {
   return findMenuItem(menu, (item) => item.iconEl.querySelector(`.${iconClass}`) !== null);
 }
 

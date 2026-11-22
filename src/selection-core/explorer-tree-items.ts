@@ -60,13 +60,13 @@ export function formatSelectionCount(count: SelectionCount): string {
  * @param visibleItems - The visible rows, in display order, from {@link getVisibleItems}.
  * @param first - One end of the range.
  * @param last - The other end of the range; it may come before `first`.
- * @returns The rows of the range, or `undefined` when either end is not visible.
+ * @returns The rows of the range, or `null` when either end is not visible.
  */
-export function getItemsInRange(visibleItems: readonly ExplorerTreeItem[], first: ExplorerTreeItem, last: ExplorerTreeItem): ExplorerTreeItem[] | undefined {
+export function getItemsInRange(visibleItems: readonly ExplorerTreeItem[], first: ExplorerTreeItem, last: ExplorerTreeItem): ExplorerTreeItem[] | null {
   const firstIndex = visibleItems.indexOf(first);
   const lastIndex = visibleItems.indexOf(last);
   return firstIndex === -1 || lastIndex === -1
-    ? undefined
+    ? null
     : visibleItems.slice(Math.min(firstIndex, lastIndex), Math.max(firstIndex, lastIndex) + 1);
 }
 

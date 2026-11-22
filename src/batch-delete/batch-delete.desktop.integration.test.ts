@@ -57,7 +57,7 @@ describe('batch delete in the File explorer', () => {
         const view = leaf.view as FileExplorerView;
         const tree = view.tree;
 
-        await wait(() => getItem(`${FOLDER}/e.md`) !== undefined && app.metadataCache.resolvedLinks[`${FOLDER}/a.md`]?.[`${FOLDER}/pic.png`] === 1);
+        await wait(() => getItem(`${FOLDER}/e.md`) !== null && app.metadataCache.resolvedLinks[`${FOLDER}/a.md`]?.[`${FOLDER}/pic.png`] === 1);
         await (getItem(FOLDER) as FolderTreeItem).setCollapsed(false);
 
         // The Delete key: one confirmation for three rows, then the attachment only `a.md` links to.
@@ -125,8 +125,8 @@ describe('batch delete in the File explorer', () => {
           (buttons.find((buttonEl) => buttonEl.textContent === text) as HTMLElement | undefined)?.click();
         }
 
-        function getItem(path: string): FileTreeItem | FolderTreeItem | undefined {
-          return view.fileItems[path];
+        function getItem(path: string): FileTreeItem | FolderTreeItem | null {
+          return view.fileItems[path] ?? null;
         }
 
         function onKeyUp(): void {
