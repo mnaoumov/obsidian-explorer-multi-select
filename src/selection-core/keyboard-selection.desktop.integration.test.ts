@@ -87,7 +87,7 @@ describe('keyboard selection in the File explorer', () => {
         const tree = view.tree;
 
         await waitUntil({
-          predicate: () => getItem(`${FOLDER}/d.md`) !== undefined && getItem(`${FOLDER}/sub`) !== undefined,
+          predicate: () => getItem(`${FOLDER}/d.md`) !== null && getItem(`${FOLDER}/sub`) !== null,
           timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS
         });
         const folderItem = getItem(FOLDER) as FolderTreeItem;
@@ -160,8 +160,8 @@ describe('keyboard selection in the File explorer', () => {
           await waitUntil({ predicate: () => keyUpCount >= expectedKeyUpCount, timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS });
         }
 
-        function getItem(path: string): FileTreeItem | FolderTreeItem | undefined {
-          return view.fileItems[path];
+        function getItem(path: string): FileTreeItem | FolderTreeItem | null {
+          return view.fileItems[path] ?? null;
         }
 
         function snapshot(): SelectionSnapshot {
@@ -216,7 +216,7 @@ describe('keyboard selection in the File explorer', () => {
         const tree = view.tree;
 
         await waitUntil({
-          predicate: () => getItem(`${FOLDER}/b.md`) !== undefined,
+          predicate: () => getItem(`${FOLDER}/b.md`) !== null,
           timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS
         });
         const folderItem = getItem(FOLDER) as FolderTreeItem;
@@ -261,7 +261,7 @@ describe('keyboard selection in the File explorer', () => {
           }
           searchInputEl.value = 'Toggle selection mode';
           searchInputEl.dispatchEvent(new Event('input'));
-          await waitUntil({ predicate: () => findAddButton() !== undefined, timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS });
+          await waitUntil({ predicate: () => findAddButton() !== null, timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS });
           findAddButton()?.click();
           await pressShiftSpace();
           await waitUntil({
@@ -270,15 +270,15 @@ describe('keyboard selection in the File explorer', () => {
           });
           app.setting.close();
 
-          function findAddButton(): HTMLElement | undefined {
+          function findAddButton(): HTMLElement | null {
             const settingEl = [...containerEl?.querySelectorAll('.setting-item') ?? []]
               .find((el) => el.textContent.includes('Toggle selection mode'));
-            return settingEl?.querySelector<HTMLElement>('.setting-add-hotkey-button') ?? undefined;
+            return settingEl?.querySelector<HTMLElement>('.setting-add-hotkey-button') ?? null;
           }
         }
 
-        function getItem(path: string): FileTreeItem | FolderTreeItem | undefined {
-          return view.fileItems[path];
+        function getItem(path: string): FileTreeItem | FolderTreeItem | null {
+          return view.fileItems[path] ?? null;
         }
 
         function onKeyUp(): void {

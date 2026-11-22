@@ -73,12 +73,12 @@ describe('getItemsInRange', () => {
     expect(getItemsInRange(visibleItems, c, b)).toEqual([b, c]);
   });
 
-  it('returns undefined when an end is not visible', () => {
+  it('returns null when an end is not visible', () => {
     const tree = new FakeExplorerTree();
     const a = tree.addFile('a.md');
     const hidden = tree.addFile('hidden.md', tree.root, { isHidden: true });
 
-    expect(getItemsInRange(getVisibleItems(tree.root), a, hidden)).toBeUndefined();
+    expect(getItemsInRange(getVisibleItems(tree.root), a, hidden)).toBeNull();
   });
 });
 

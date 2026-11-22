@@ -72,6 +72,7 @@ export function createGlobRule(pattern: string): ItemRule | null {
  * @param value - The value.
  * @returns The rule.
  */
+// eslint-disable-next-line typescript-dev-toolkit/no-undefined-return-type -- Mirrors Obsidian's `CachedMetadata.frontmatter`, which a note without properties leaves `undefined`.
 export function createPropertyRule(getFrontmatter: (file: TFile) => FrontMatterCache | undefined, key: string, value: string): ItemRule {
   const expectedValue = value.trim().toLowerCase();
   return (item) => {
