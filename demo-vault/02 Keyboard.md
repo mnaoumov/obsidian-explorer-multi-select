@@ -10,6 +10,8 @@ Core's File explorer can grow a selection with Shift+Up/Down, but it cannot sele
   - clears the whole selection, in or out of selection mode. With nothing selected, it does whatever it does elsewhere, so a `Shift+Space` hotkey you gave a command still runs.
 - **`Shift+Up` / `Shift+Down`**
   - grows the selection from where it started, and shrinks it again when you reverse direction.
+- **`Shift+Home` / `Shift+End`**
+  - selects from where the range started to the first or last row the File explorer shows, and moves the focus there. `Shift+Up` / `Shift+Down` carry on from the same start.
 
 ## Try it
 
@@ -31,6 +33,7 @@ Now try, in order:
 3. Press `Space`. **Banana**, which has the focus, leaves the selection, and **Apple** stays. Press it again and **Banana** is back.
 4. Press `Ctrl+A` / `Cmd+A`. Everything in the folder is selected, the **Fruit basket** folder included.
 5. Press `Shift+Space`. The whole selection is cleared.
+6. Press `Shift+End`. The selection runs from **Banana** to the last row the File explorer shows, and the focus jumps there. Press `Shift+Home` and it runs from **Banana** up to the first row instead.
 
 ```code-button
 ---

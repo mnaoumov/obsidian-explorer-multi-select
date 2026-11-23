@@ -295,6 +295,93 @@ describe('ExplorerTreeKeyboard', () => {
       expect(tree.onKeyArrowUp).toHaveBeenCalledWith(up);
     });
   });
+
+  describe('extendRangeToEnd', () => {
+    const SHIFT_END: KeymapContext = { key: 'End', modifiers: 'Shift', vkey: 'End' };
+    const SHIFT_HOME: KeymapContext = { key: 'Home', modifiers: 'Shift', vkey: 'Home' };
+    let a: ExplorerTreeItem;
+    let b: ExplorerTreeItem;
+    let c: ExplorerTreeItem;
+    let d: ExplorerTreeItem;
+
+    beforeEach(() => {
+      a = tree.addFile('a.md');
+      b = tree.addFile('b.md');
+      const folder = tree.addFolder('folder', tree.root, { isCollapsed: true });
+      tree.addFile('folder/inside.md', folder);
+      c = tree.addFile('c.md');
+      tree.addFile('hidden.md', tree.root, { isHidden: true });
+      d = tree.addFile('d.md');
+    });
+
+    it('selects from the focused row to the last visible row and focuses it', () => {
+      tree.focusedItem = b;
+
+      expect(keyboard.extendRangeToEnd(createKeyboardEvent(), SHIFT_END, 'forwards')).toBe(false);
+
+      expect(selectedNames()).toEqual(['b.md', 'c.md', 'd.md', 'folder']);
+      expect(tree.focusedItem).toBe(d);
+      expect(tree.activeDom).toBe(b);
+    });
+
+    it('selects from the focused row to the first row, and swaps ends around the same anchor', () => {
+      tree.focusedItem = c;
+
+      keyboard.extendRangeToEnd(createKeyboardEvent(), SHIFT_HOME, 'backwards');
+      expect(selectedNames()).toEqual(['a.md', 'b.md', 'c.md', 'folder']);
+      expect(tree.focusedItem).toBe(a);
+
+      keyboard.extendRangeToEnd(createKeyboardEvent(), SHIFT_END, 'forwards');
+      expect(selectedNames()).toEqual(['c.md', 'd.md']);
+    });
+
+    it('continues a Shift+Up/Down range from its anchor, and Shift+Up/Down continues it after', () => {
+      tree.selectedDoms.add(a);
+      tree.focusedItem = c;
+      keyboard.extendRange(createKeyboardEvent(), 'backwards');
+
+      keyboard.extendRangeToEnd(createKeyboardEvent(), SHIFT_END, 'forwards');
+      expect(selectedNames()).toEqual(['a.md', 'c.md', 'd.md']);
+
+      keyboard.extendRange(createKeyboardEvent(), 'backwards');
+      expect(selectedNames()).toEqual(['a.md', 'c.md']);
+    });
+
+    it('starts at the last clicked row when nothing is focused', () => {
+      tree.activeDom = c;
+
+      keyboard.extendRangeToEnd(createKeyboardEvent(), SHIFT_END, 'forwards');
+
+      expect(selectedNames()).toEqual(['c.md', 'd.md']);
+    });
+
+    it('selects only the end row when nothing is focused or clicked', () => {
+      keyboard.extendRangeToEnd(createKeyboardEvent(), SHIFT_HOME, 'backwards');
+
+      expect(selectedNames()).toEqual(['a.md']);
+    });
+
+    it('selects nothing when there is no visible row', () => {
+      const emptyTree = new FakeExplorerTree();
+      const emptyKeyboard = new ExplorerTreeKeyboard(emptyTree.asTree());
+
+      expect(emptyKeyboard.extendRangeToEnd(createKeyboardEvent(), SHIFT_END, 'forwards')).toBe(false);
+      expect(emptyTree.selectedDoms.size).toBe(0);
+    });
+
+    it('hands the key to the parent scope in a text field', () => {
+      const parent = new FakeScope();
+      const shouldHotkeyRunDefault = vi.fn(() => false);
+      parent.register(['Shift'], 'End', shouldHotkeyRunDefault);
+      tree.scope.parent = parent;
+      tree.focusedItem = a;
+
+      expect(keyboard.extendRangeToEnd(createKeyboardEvent(createEl('input')), SHIFT_END, 'forwards')).toBe(false);
+      expect(shouldHotkeyRunDefault).toHaveBeenCalledOnce();
+      expect(keyboard.extendRangeToEnd(createKeyboardEvent(createEl('input')), SHIFT_HOME, 'backwards')).toBe(true);
+      expect(selectedNames()).toEqual([]);
+    });
+  });
 });
 
 describe('isEditableTarget', () => {
