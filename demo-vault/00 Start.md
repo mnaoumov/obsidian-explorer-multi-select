@@ -38,7 +38,8 @@ Manual equivalent: click empty space in the File explorer, or press `Esc` there.
 | [04 Select by rule](<./04 Select by rule.md>) | Select by extension, glob pattern, property value or the explorer's filter, and invert. |
 | [05 Batch delete](<./05 Batch delete.md>) | One confirmation for deleting many items. |
 | [06 Click settings](<./06 Click settings.md>) | Ctrl/Cmd-click to toggle, and a selection that survives a click. |
-| [07 Settings](<./07 Settings.md>) | Every setting, by the key it is stored under in `data.json`. |
+| [07 Open the selection](<./07 Open the selection.md>) | Open the selected files in new tabs or a new window. |
+| [08 Settings](<./08 Settings.md>) | Every setting, by the key it is stored under in `data.json`. |
 
 ## Materials
 

@@ -24,6 +24,10 @@ import type {
 
 import { ExplorerBatchDelete } from '../batch-delete/explorer-batch-delete.ts';
 import { ExplorerTreeClickComponent } from '../click/explorer-tree-click-component.ts';
+import {
+  getOpenableFiles,
+  openFiles
+} from '../open-selection/open-selection.ts';
 import { invertSelection } from '../select-by-rule/select-by-rule.ts';
 import { ExplorerSelectionModeComponent } from '../selection-mode/explorer-selection-mode-component.ts';
 import {
@@ -42,6 +46,16 @@ import {
  * add: its title is translated.
  */
 const DELETE_MENU_ITEM_ICON_CLASS = 'lucide-trash-2';
+
+/**
+ * The section of core's own open items in its file menus.
+ */
+const OPEN_MENU_SECTION = 'open';
+
+/**
+ * The fewest items a menu is for before it gets the open items: core's menu for one item opens it already.
+ */
+const MIN_OPEN_MENU_ITEM_COUNT = 2;
 
 interface ExplorerSelectionComponentConstructorParams {
   readonly app: App;
@@ -151,6 +165,39 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
     }
   }
 
+  private addOpenMenuItems(menu: Menu, files: readonly TAbstractFile[]): void {
+    // Core's menu for one item opens it already.
+    if (files.length < MIN_OPEN_MENU_ITEM_COUNT) {
+      return;
+    }
+    const openableFiles = getOpenableFiles(files);
+    if (openableFiles.length === 0) {
+      return;
+    }
+    const count = formatSelectionCount({ fileCount: openableFiles.length, folderCount: 0 });
+    menu.addItem((item) => {
+      item
+        .setTitle(`Open ${count} in new tabs`)
+        .setIcon('lucide-file-stack')
+        .setSection(OPEN_MENU_SECTION)
+        .onClick(() => {
+          invokeAsyncSafely(() => openFiles(this.app, openableFiles, 'tab'));
+        });
+    });
+    if (!Platform.isDesktopApp) {
+      return;
+    }
+    menu.addItem((item) => {
+      item
+        .setTitle(`Open ${count} in new window`)
+        .setIcon('lucide-picture-in-picture-2')
+        .setSection(OPEN_MENU_SECTION)
+        .onClick(() => {
+          invokeAsyncSafely(() => openFiles(this.app, openableFiles, 'window'));
+        });
+    });
+  }
+
   private attachToExplorers(): void {
     const views = this.getExplorerViews();
     const trees = new Set(views.map((view) => view.tree));
@@ -256,31 +303,19 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
   }
 
   /**
-   * Re-points core's Delete item in the explorer's menu for a multi-item selection, which asks once per item,
-   * to the batch delete. Core adds that item before it fires `files-menu`, so it is in the menu already.
+   * Adds core's missing open items to the explorer's menu for several items: open the files in new tabs,
+   * and on desktop in a new window. Folders are skipped.
    *
    * @param menu - The menu.
-   * @param files - The files the menu is for.
+   * @param files - The files and folders the menu is for.
    * @param source - Where the menu was opened.
    */
   private onFilesMenu(menu: Menu, files: TAbstractFile[], source: string): void {
     if (source !== FILE_EXPLORER_MENU_SOURCE) {
       return;
     }
-    const coreDeleteItem = findMenuItemByIcon(menu, DELETE_MENU_ITEM_ICON_CLASS);
-    if (!coreDeleteItem) {
-      return;
-    }
-    // Core opens this menu for the whole selection of the explorer it was opened in.
-    const fileSet = new Set(files);
-    for (const [tree, batchDelete] of this.batchDeletes) {
-      if (batchDelete.isBatch() && tree.selectedDoms.size === fileSet.size && [...tree.selectedDoms].every((item) => fileSet.has(item.file))) {
-        coreDeleteItem.onClick(() => {
-          invokeAsyncSafely(() => batchDelete.deleteSelection());
-        });
-        return;
-      }
-    }
+    this.addOpenMenuItems(menu, files);
+    this.routeDeleteMenuItemToBatchDelete(menu, files);
   }
 
   private onLayoutReady(): void {
@@ -322,6 +357,30 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
     this.register(() => {
       scope.unregister(handler);
     });
+  }
+
+  /**
+   * Re-points core's Delete item in the explorer's menu for a multi-item selection, which asks once per item,
+   * to the batch delete. Core adds that item before it fires `files-menu`, so it is in the menu already.
+   *
+   * @param menu - The menu.
+   * @param files - The files and folders the menu is for.
+   */
+  private routeDeleteMenuItemToBatchDelete(menu: Menu, files: readonly TAbstractFile[]): void {
+    const coreDeleteItem = findMenuItemByIcon(menu, DELETE_MENU_ITEM_ICON_CLASS);
+    if (!coreDeleteItem) {
+      return;
+    }
+    // Core opens this menu for the whole selection of the explorer it was opened in.
+    const fileSet = new Set(files);
+    for (const [tree, batchDelete] of this.batchDeletes) {
+      if (batchDelete.isBatch() && tree.selectedDoms.size === fileSet.size && [...tree.selectedDoms].every((item) => fileSet.has(item.file))) {
+        coreDeleteItem.onClick(() => {
+          invokeAsyncSafely(() => batchDelete.deleteSelection());
+        });
+        return;
+      }
+    }
   }
 
   /**
