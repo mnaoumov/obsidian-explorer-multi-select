@@ -48,6 +48,7 @@ A copy of the vault ships with every release. You can access it via any of the f
 - **A selection count** in the status bar, such as `12 files, 3 folders`. [03 Selection count](<./demo-vault/03 Selection count.md>)
 - **Select by rule**: commands that select by extension, by glob pattern, by property value, or every file the explorer's filter shows, in the focused folder or everything under it, and a command that inverts the selection. [04 Select by rule](<./demo-vault/04 Select by rule.md>)
 - **One confirmation for a batch delete**, from the Delete key, the action bar or core's context menu. Each item still goes through Obsidian's own delete, so the **Deleted files** setting holds. [05 Batch delete](<./demo-vault/05 Batch delete.md>)
+- **Open the selection**: core's menu for several items gains **Open in new tabs** and, on desktop, **Open in new window**, which open the selected files in order and skip the folders. [07 Open the selection](<./demo-vault/07 Open the selection.md>)
 - **Two opt-in click settings**: Ctrl/Cmd-click toggles a row, and a plain click keeps the selection while it opens a file. [06 Click settings](<./demo-vault/06 Click settings.md>)
 
 ## See also

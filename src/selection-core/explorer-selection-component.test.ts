@@ -1,6 +1,9 @@
 import type {
-  Menu,
-  MenuItem,
+  MenuItem as MenuItemOriginal,
+  Menu as MenuOriginal,
+  OpenViewState,
+  PaneType,
+  TFile,
   WorkspaceLeaf
 } from 'obsidian';
 
@@ -12,6 +15,8 @@ import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   App,
+  Menu,
+  MenuItem,
   Platform
 } from 'obsidian-test-mocks/obsidian';
 import {
@@ -366,11 +371,18 @@ describe('ExplorerSelectionComponent', () => {
     expect(view.containerEl.querySelector('.explorer-multi-select-toggle-button')).toBeNull();
   });
 
-  describe('batch delete', () => {
-    type SpiedMenuItem = MenuItem & MenuItemOnClickSpy;
+  describe('multi-item menu', () => {
+    type SpiedMenuItem = MenuItemOnClickSpy & MenuItemOriginal;
+
+    let isDesktopApp: boolean;
+
+    beforeEach(() => {
+      isDesktopApp = Platform.isDesktopApp;
+    });
 
     afterEach(() => {
       vi.restoreAllMocks();
+      Platform.isDesktopApp = isDesktopApp;
     });
 
     function createMenuItem(iconClass: string): SpiedMenuItem {
@@ -379,9 +391,66 @@ describe('ExplorerSelectionComponent', () => {
       return castTo<SpiedMenuItem>({ iconEl, onClick: vi.fn() });
     }
 
-    function triggerFilesMenu(items: MenuItem[], files: unknown[], source = 'file-explorer-context-menu'): void {
-      app.asOriginalType__().workspace.trigger('files-menu', castTo<Menu>({ items }), files, source, null);
+    function triggerFilesMenu(items: MenuItemOriginal[], files: unknown[], source = 'file-explorer-context-menu'): MenuOriginal {
+      const menu = Menu.create2__().asOriginalType2__();
+      menu.items.push(...items);
+      app.asOriginalType__().workspace.trigger('files-menu', menu, files, source, null);
+      return menu;
     }
+
+    function addedItems(menu: MenuOriginal): MenuItem[] {
+      return menu.items.filter((item) => item instanceof MenuItem).map((item) => castTo<MenuItem>(item));
+    }
+
+    it('adds open items to the explorer\'s menu for several items, which open only the files', async () => {
+      const opened: string[] = [];
+      const paneTypes: PaneType[] = [];
+      app.asOriginalType__().workspace.getLeaf = vi.fn((paneType?: boolean | PaneType) => {
+        paneTypes.push(castTo<PaneType>(paneType));
+        return castTo<WorkspaceLeaf>({
+          openFile: (file: TFile, _state?: OpenViewState): Promise<void> => {
+            opened.push(file.path);
+            return noopAsync();
+          }
+        });
+      });
+      const a = await app.asOriginalType__().vault.create('a.md', '');
+      const folder = await app.asOriginalType__().vault.createFolder('folder');
+      const b = await app.asOriginalType__().vault.create('b.canvas', '');
+      loadComponent();
+      Platform.isDesktopApp = true;
+      const menu = triggerFilesMenu([], [a, folder, b]);
+      const items = addedItems(menu);
+      expect(items.map((item) => [item.title__, item.icon__, item.section])).toEqual([
+        ['Open 2 files in new tabs', 'lucide-file-stack', 'open'],
+        ['Open 2 files in new window', 'lucide-picture-in-picture-2', 'open']
+      ]);
+
+      items[0]?.onClick__?.(new MouseEvent('click'));
+      await vi.waitFor(() => {
+        expect(opened).toEqual(['a.md', 'b.canvas']);
+      });
+      expect(paneTypes).toEqual(['tab', 'tab']);
+
+      items[1]?.onClick__?.(new MouseEvent('click'));
+      await vi.waitFor(() => {
+        expect(opened).toHaveLength(4);
+      });
+      expect(paneTypes.slice(2)).toEqual(['window', 'tab']);
+    });
+
+    it('offers no new window off desktop, and no open items for one item, only folders or another menu', async () => {
+      const a = await app.asOriginalType__().vault.create('a.md', '');
+      const b = await app.asOriginalType__().vault.create('b.md', '');
+      const folder = await app.asOriginalType__().vault.createFolder('folder');
+      const other = await app.asOriginalType__().vault.createFolder('other');
+      loadComponent();
+      Platform.isDesktopApp = false;
+      expect(addedItems(triggerFilesMenu([], [a, b])).map((item) => item.title__)).toEqual(['Open 2 files in new tabs']);
+      expect(addedItems(triggerFilesMenu([], [a]))).toEqual([]);
+      expect(addedItems(triggerFilesMenu([], [folder, other]))).toEqual([]);
+      expect(addedItems(triggerFilesMenu([], [a, b], 'bases-context-menu'))).toEqual([]);
+    });
 
     it('routes the Delete key to the batch delete for several rows, and to core for one', async () => {
       const deleteSelectionSpy = vi.spyOn(ExplorerBatchDelete.prototype, 'deleteSelection').mockResolvedValue();

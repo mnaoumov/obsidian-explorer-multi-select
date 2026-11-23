@@ -34,7 +34,7 @@ Every row now has a checkbox. Click [Apple](<./Materials/01 Selection mode/Apple
 
 ## On mobile
 
-A long-press on a row turns selection mode on with that row selected. A second long-press then opens core's context menu as before. The `shouldEnterSelectionModeOnLongPress` setting turns this off, for anyone who wants the first long-press to open the menu (see [07 Settings](<./07 Settings.md>)).
+A long-press on a row turns selection mode on with that row selected. A second long-press then opens core's context menu as before. The `shouldEnterSelectionModeOnLongPress` setting turns this off, for anyone who wants the first long-press to open the menu (see [08 Settings](<./08 Settings.md>)).
 
 ## Turn it off
 

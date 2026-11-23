@@ -226,6 +226,22 @@ export async function setSetting(app: App, key: BooleanSettingKey, isEnabled: bo
   new Notice(`${key} is now ${String(isEnabled)}. It is live, so no reload is needed.`);
 }
 
+/**
+ * Opens core's context menu for the File explorer's selection, beside its first selected row.
+ *
+ * Manual equivalent: right-click a selected row in the File explorer.
+ */
+export async function showSelectionMenu(app: App): Promise<void> {
+  const view = await revealExplorer(app);
+  const row = view ? [...view.tree.selectedDoms][0] : undefined;
+  if (!view || !row) {
+    new Notice('Select a few rows first.');
+    return;
+  }
+  const rect = row.selfEl.getBoundingClientRect();
+  view.openFileContextMenu(new MouseEvent('contextmenu', { clientX: rect.right, clientY: rect.bottom }), row.selfEl);
+}
+
 function isFolderRow(row: ExplorerRow): row is FolderTreeItem {
   return 'vChildren' in row;
 }
