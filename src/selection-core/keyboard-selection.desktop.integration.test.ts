@@ -16,6 +16,23 @@ import {
 // Desktop-only: the keys need a hardware keyboard, and the status bar does not exist on mobile.
 // Isolation: `npx vitest run --project integration-tests:desktop src/keyboard-selection.desktop.integration.test.ts`.
 
+interface HomeEndResult {
+  readonly afterShiftDown: HomeEndSnapshot;
+  readonly afterShiftEnd: HomeEndSnapshot;
+  readonly afterShiftHome: HomeEndSnapshot;
+  readonly expectedAfterShiftDown: string[];
+  readonly expectedAfterShiftEnd: string[];
+  readonly expectedAfterShiftHome: string[];
+  readonly firstPath: string;
+  readonly lastPath: string;
+}
+
+interface HomeEndSnapshot {
+  readonly focusedPath: null | string;
+  readonly isFocusedRowInView: boolean;
+  readonly paths: string[];
+}
+
 interface KeyboardSelectionResult {
   readonly afterCtrlA: SelectionSnapshot;
   readonly afterCtrlASecond: SelectionSnapshot;
@@ -316,5 +333,120 @@ describe('keyboard selection in the File explorer', () => {
     expect(result.afterHotkeyWithNothingSelected).toEqual({ isSelectionMode: true, paths: [] });
     // The selection takes the key, so the hotkey does not toggle the mode back off.
     expect(result.afterHotkeyWithSelection).toEqual({ isSelectionMode: true, paths: [] });
+  });
+
+  it('extends the range to the last row with Shift+End and to the first row with Shift+Home, around one anchor', async () => {
+    const result = await evalInObsidian({
+      async callback({ app, lib: { pressKey, waitUntil } }): Promise<HomeEndResult> {
+        const WAIT_TIMEOUT_IN_MILLISECONDS = 2000;
+        const FOLDER = 'ems-home-end';
+        const ANCHOR_PATH = `${FOLDER}/b.md`;
+
+        await app.vault.createFolder(FOLDER);
+        for (const name of ['a', 'b', 'c']) {
+          await app.vault.create(`${FOLDER}/${name}.md`, name);
+        }
+
+        const leaf = app.workspace.getLeavesOfType('file-explorer')[0];
+        if (!leaf) {
+          throw new Error('No File explorer leaf.');
+        }
+        await leaf.loadIfDeferred();
+        await app.workspace.revealLeaf(leaf);
+        const view = leaf.view as FileExplorerView;
+        const tree = view.tree;
+
+        await waitUntil({
+          predicate: () => view.fileItems[`${FOLDER}/c.md`] !== undefined,
+          timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS
+        });
+        await (view.fileItems[FOLDER] as FolderTreeItem).setCollapsed(false);
+
+        let keyUpCount = 0;
+        window.addEventListener('keyup', onKeyUp, { capture: true });
+
+        // The rows a user can see, in display order, read straight from the explorer's own tree. The tree sorts a new
+        // folder into place on a later frame, so wait until it is there.
+        await waitUntil({
+          predicate: () => collectVisiblePaths(tree.root.vChildren.children).includes(ANCHOR_PATH),
+          timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS
+        });
+        const visiblePaths = collectVisiblePaths(tree.root.vChildren.children);
+        const anchorIndex = visiblePaths.indexOf(ANCHOR_PATH);
+
+        tree.clearSelectedDoms();
+        app.workspace.setActiveLeaf(leaf, { focus: true });
+        view.containerEl.focus();
+        tree.setFocusedItem(view.fileItems[ANCHOR_PATH] as FileTreeItem);
+
+        await press('End', ['Shift']);
+        const afterShiftEnd = await snapshot();
+        await press('Home', ['Shift']);
+        const afterShiftHome = await snapshot();
+        await press('Down', ['Shift']);
+        const afterShiftDown = await snapshot();
+        await press('Escape');
+
+        window.removeEventListener('keyup', onKeyUp, { capture: true });
+        return {
+          afterShiftDown,
+          afterShiftEnd,
+          afterShiftHome,
+          expectedAfterShiftDown: visiblePaths.slice(1, anchorIndex + 1).sort(),
+          expectedAfterShiftEnd: visiblePaths.slice(anchorIndex).sort(),
+          expectedAfterShiftHome: visiblePaths.slice(0, anchorIndex + 1).sort(),
+          firstPath: visiblePaths[0] ?? '',
+          lastPath: visiblePaths.at(-1) ?? ''
+        };
+
+        function collectVisiblePaths(items: (FileTreeItem | FolderTreeItem)[]): string[] {
+          const paths: string[] = [];
+          for (const item of items) {
+            if (item.info.hidden || item.el.hasClass('is-filtered-out')) {
+              continue;
+            }
+            paths.push(item.file.path);
+            if ('vChildren' in item && !item.collapsed) {
+              paths.push(...collectVisiblePaths(item.vChildren.children));
+            }
+          }
+          return paths;
+        }
+
+        function onKeyUp(): void {
+          keyUpCount++;
+        }
+
+        async function press(key: string, modifiers: Modifier[] = []): Promise<void> {
+          const expectedKeyUpCount = keyUpCount + 1;
+          await pressKey({ key, modifiers });
+          await waitUntil({ predicate: () => keyUpCount >= expectedKeyUpCount, timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS });
+        }
+
+        function isFocusedRowInView(): boolean {
+          const focusedItem = tree.focusedItem;
+          const containerRect = tree.containerEl.getBoundingClientRect();
+          const focusedRect = focusedItem?.selfEl.getBoundingClientRect();
+          return !!focusedRect && focusedRect.height > 0 && focusedRect.top >= containerRect.top
+            && focusedRect.bottom <= containerRect.bottom;
+        }
+
+        async function snapshot(): Promise<HomeEndSnapshot> {
+          // The tree renders and scrolls its virtual rows on the next frame.
+          await waitUntil({ predicate: isFocusedRowInView, timeoutInMilliseconds: WAIT_TIMEOUT_IN_MILLISECONDS }).catch(() => undefined);
+          const focusedItem = tree.focusedItem;
+          return {
+            focusedPath: focusedItem?.file.path ?? null,
+            isFocusedRowInView: isFocusedRowInView(),
+            paths: [...tree.selectedDoms].map((item) => item.file.path).sort()
+          };
+        }
+      },
+      vaultPath: getTemporaryVault().path
+    });
+
+    expect(result.afterShiftEnd).toEqual({ focusedPath: result.lastPath, isFocusedRowInView: true, paths: result.expectedAfterShiftEnd });
+    expect(result.afterShiftHome).toEqual({ focusedPath: result.firstPath, isFocusedRowInView: true, paths: result.expectedAfterShiftHome });
+    expect(result.afterShiftDown.paths).toEqual(result.expectedAfterShiftDown);
   });
 });

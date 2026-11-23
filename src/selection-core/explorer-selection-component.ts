@@ -289,6 +289,8 @@ export class ExplorerSelectionComponent extends MonkeyAroundComponent {
     this.registerLeadingKey(tree.scope, ['Shift'], ' ', (keyboardEvent, keymapContext) => keyboard.clearSelection(keyboardEvent, keymapContext));
     this.registerLeadingKey(tree.scope, ['Shift'], 'ArrowDown', (keyboardEvent) => keyboard.extendRange(keyboardEvent, 'forwards'));
     this.registerLeadingKey(tree.scope, ['Shift'], 'ArrowUp', (keyboardEvent) => keyboard.extendRange(keyboardEvent, 'backwards'));
+    this.registerLeadingKey(tree.scope, ['Shift'], 'Home', (keyboardEvent, keymapContext) => keyboard.extendRangeToEnd(keyboardEvent, keymapContext, 'backwards'));
+    this.registerLeadingKey(tree.scope, ['Shift'], 'End', (keyboardEvent, keymapContext) => keyboard.extendRangeToEnd(keyboardEvent, keymapContext, 'forwards'));
   }
 
   private getExplorerViews(): FileExplorerView[] {

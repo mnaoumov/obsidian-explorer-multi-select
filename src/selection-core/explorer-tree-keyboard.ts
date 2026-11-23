@@ -76,40 +76,44 @@ export class ExplorerTreeKeyboard {
       return this.delegateArrow(keyboardEvent, direction);
     }
 
-    const tree = this.tree;
     const previousFocus = this.getFocusedItem();
     const state = this.isRangeInProgress(previousFocus) ? this.rangeState : undefined;
 
-    tree.changeFocusedItem(direction);
-    const focus = this.getFocusedItem();
-    if (!focus) {
+    this.tree.changeFocusedItem(direction);
+    this.applyRange(state, previousFocus);
+    return false;
+  }
+
+  /**
+   * Handles Shift+Home/End: moves the focus to the first or last visible row, scrolls it into view, and makes
+   * the selection the range from the anchor to it, plus whatever was selected before the range started. The
+   * anchor is the one Shift+Up/Down use, so the keys combine. Core binds neither key on the tree, so in a text
+   * field, such as the explorer's filter box, the key goes to the scope above the tree.
+   *
+   * @param keyboardEvent - The key event.
+   * @param keymapContext - The key and its modifiers.
+   * @param direction - `backwards` for Shift+Home, `forwards` for Shift+End.
+   * @returns The keymap result.
+   */
+  public extendRangeToEnd(keyboardEvent: KeyboardEvent, keymapContext: KeymapContext, direction: RangeDirection): KeymapResult {
+    const tree = this.tree;
+    if (isEditableTarget(keyboardEvent)) {
+      return tree.scope.parent?.handleKey(keyboardEvent, keymapContext) !== false;
+    }
+
+    const visibleItems = getVisibleItems(tree.root);
+    const end = direction === 'forwards' ? visibleItems.at(-1) : visibleItems[0];
+    if (!end) {
       this.rangeState = undefined;
       return false;
     }
 
-    let anchor = state?.anchor ?? previousFocus ?? focus;
-    const visibleItems = getVisibleItems(tree.root);
-    let items = getItemsInRange(visibleItems, anchor, focus);
-    if (!items) {
-      // The anchor is gone from view: its folder was collapsed, or the filter hides it. Start over here.
-      anchor = focus;
-      items = [focus];
-    }
-
-    const baseSelection = state?.baseSelection ?? new Set(tree.selectedDoms);
-    const itemSet = new Set(items);
-    for (const item of state?.items ?? []) {
-      if (!itemSet.has(item) && !baseSelection.has(item)) {
-        tree.deselectItem(item);
-      }
-    }
-    for (const item of items) {
-      tree.selectItem(item);
-    }
-
-    // Core's Shift-click ranges from `activeDom`, so a Shift-click after the keys continues this range.
-    tree.activeDom = anchor;
-    this.rangeState = { anchor, baseSelection, focus, items };
+    const previousFocus = this.getFocusedItem();
+    const state = this.isRangeInProgress(previousFocus) ? this.rangeState : undefined;
+    // With no focus, the range starts where core's own Shift+arrow would: at the last clicked row.
+    const start = previousFocus ?? (tree.isItem(tree.activeDom ?? undefined) ? tree.activeDom : null);
+    tree.setFocusedItem(end, true);
+    this.applyRange(state, start);
     return false;
   }
 
@@ -161,6 +165,46 @@ export class ExplorerTreeKeyboard {
 
     this.rangeState = undefined;
     return false;
+  }
+
+  /**
+   * Makes the selection the range from the anchor to the row the focus just moved to, plus whatever was
+   * selected before the range started, and takes back the rows an earlier press of the same range added.
+   *
+   * @param state - The range in progress, or `undefined` to start one.
+   * @param start - The focused row before the key moved the focus: the anchor of a new range.
+   */
+  private applyRange(state: RangeState | undefined, start: ExplorerTreeItem | null): void {
+    const tree = this.tree;
+    const focus = this.getFocusedItem();
+    if (!focus) {
+      this.rangeState = undefined;
+      return;
+    }
+
+    let anchor = state?.anchor ?? start ?? focus;
+    const visibleItems = getVisibleItems(tree.root);
+    let items = getItemsInRange(visibleItems, anchor, focus);
+    if (!items) {
+      // The anchor is gone from view: its folder was collapsed, or the filter hides it. Start over here.
+      anchor = focus;
+      items = [focus];
+    }
+
+    const baseSelection = state?.baseSelection ?? new Set(tree.selectedDoms);
+    const itemSet = new Set(items);
+    for (const item of state?.items ?? []) {
+      if (!itemSet.has(item) && !baseSelection.has(item)) {
+        tree.deselectItem(item);
+      }
+    }
+    for (const item of items) {
+      tree.selectItem(item);
+    }
+
+    // Core's Shift-click ranges from `activeDom`, so a Shift-click after the keys continues this range.
+    tree.activeDom = anchor;
+    this.rangeState = { anchor, baseSelection, focus, items };
   }
 
   private delegateArrow(keyboardEvent: KeyboardEvent, direction: RangeDirection): KeymapResult {
