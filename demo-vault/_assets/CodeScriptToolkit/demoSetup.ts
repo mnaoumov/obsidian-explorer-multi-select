@@ -6,6 +6,7 @@ import type {
 import type { App } from 'obsidian';
 
 import { configureCommunityPlugin } from '@mnaoumov/obsidian-lib/community-plugins';
+import { appendCodeBlock } from '@mnaoumov/obsidian-lib/html-element';
 import { Notice } from 'obsidian';
 
 // Shared code for every `code-button` in this vault, so each note's button stays a one-liner instead of a
@@ -149,8 +150,13 @@ export async function resetSettings(app: App): Promise<void> {
  * Manual equivalent: run the command from the Command Palette (`Ctrl+P` / `Cmd+P`).
  */
 export function runCommand(app: App, commandName: string): void {
-  if (!app.commands.executeCommandById(`${PLUGIN_ID}:${commandName}`)) {
-    new Notice(`The command ${commandName} cannot run right now. Is the File explorer open?`);
+  const commandId = `${PLUGIN_ID}:${commandName}`;
+  if (!app.commands.executeCommandById(commandId)) {
+    new Notice(createFragment((fragment) => {
+      fragment.appendText('The command ');
+      appendCodeBlock(fragment, app.commands.findCommand(commandId)?.name ?? commandName);
+      fragment.appendText(' cannot run right now. Is the File explorer open?');
+    }));
   }
 }
 
